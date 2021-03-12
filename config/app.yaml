@@ -1,0 +1,20 @@
+site:
+  name: pmsGo
+  maintain: false
+  debug: true
+  port: 8080
+
+database:
+  host: 127.0.0.1
+  port: 33060
+  username: homestead
+  password: secret
+  database: pms
+  charset: mb4utf8
+  prefix: pms_
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  auth: ""
+  prefix: "pms:"
