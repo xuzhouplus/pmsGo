@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pmsGo/app/model"
@@ -13,8 +12,12 @@ type admin struct {
 var Admin = &admin{}
 
 func (admin admin) Login(c *gin.Context) {
-	fmt.Println(c.Request.PostFormValue("account"))
-	loginForm := &model.Login{}
-	c.BindJSON(loginForm)
-	c.JSON(http.StatusOK, loginForm)
+	requestData := make(map[string]string)
+	c.BindJSON(&requestData)
+	loginAdmin, error := model.Admin.Login(requestData["account"], requestData["password"])
+	if error != nil {
+		c.JSON(http.StatusOK, error.Error())
+		return
+	}
+	c.JSON(http.StatusOK, loginAdmin)
 }

@@ -3,14 +3,15 @@ site:
   maintain: false
   debug: true
   port: 8080
+  cors: true
 
 database:
   host: 127.0.0.1
-  port: 33060
+  port: 3306
   username: homestead
   password: secret
   database: pms
-  charset: mb4utf8
+  charset: utf8mb4
   prefix: pms_
 
 redis:

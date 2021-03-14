@@ -5,4 +5,5 @@ type site struct {
 	Debug    bool   `yaml:"debug"`
 	Maintain bool   `yaml:"maintain"`
 	Port     int    `yaml:"port"`
+	AllowCrossDomain bool `yaml:"cors"`
 }
