@@ -25,7 +25,7 @@ var Carousel = &carousel{}
 func (model carousel) List(page interface{}, size interface{}, fields interface{}, like interface{}, order interface{}) ([]carousel, error) {
 	var carousels []carousel
 
-	connect := database.Connect(&carousel{})
+	connect := database.Query(&carousel{})
 
 	if size != nil {
 		connect.Limit(size.(int))

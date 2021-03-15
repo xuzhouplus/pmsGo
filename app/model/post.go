@@ -24,7 +24,7 @@ var Post = &post{}
 
 func (model post) List(page interface{}, size interface{}, fields interface{}, like interface{}, enable interface{}, order interface{}) (map[string]interface{}, error) {
 	var posts []post
-	connect := database.Connect(&post{})
+	connect := database.Query(&post{})
 	if fields != nil {
 		connect.Select(fields)
 	}
