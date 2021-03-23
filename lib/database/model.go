@@ -13,7 +13,7 @@ type Model struct {
 	db *gorm.DB
 }
 
-func Connect(model interface{}) *gorm.DB {
+func Query(model interface{}) *gorm.DB {
 	dsn := config.Config.Database.Username + ":" + config.Config.Database.Password + "@tcp(" + config.Config.Database.Host + ":" + strconv.Itoa(config.Config.Database.Port) + ")/" + config.Config.Database.Database + "?charset=" + config.Config.Database.Charset + "&parseTime=True&loc=Local"
 	fmt.Println(dsn)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{

@@ -1,6 +1,8 @@
 package controller
 
-type app struct {
+type App struct {
+	Except   []string
+	Optional []string
 }
 
 const (
@@ -14,7 +16,13 @@ type response struct {
 	Data    interface{} `json:"data"`
 }
 
-func (controller app) response(code int, data interface{}, message string) *response {
+func (controller App) CodeOk() int {
+	return CodeOk
+}
+func (controller App) CodeFail() int {
+	return CodeFail
+}
+func (controller App) Response(code int, data interface{}, message string) *response {
 	returnData := &response{}
 	if code == 0 {
 		returnData.Code = CodeFail

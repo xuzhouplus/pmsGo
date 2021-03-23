@@ -25,7 +25,7 @@ var Setting = &setting{}
 func (c setting) GetPublicSettings() (map[string]interface{}, error) {
 	var returnData = make(map[string]interface{})
 	var data []setting
-	result := database.Connect(&setting{}).Where("private != ?", TypeIsPrivate).Find(&data)
+	result := database.Query(&setting{}).Where("private != ?", TypeIsPrivate).Find(&data)
 	if result.Error != nil {
 		return returnData, errors.New("获取配置失败")
 	}

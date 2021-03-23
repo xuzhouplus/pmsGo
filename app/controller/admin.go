@@ -4,9 +4,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pmsGo/app/model"
+	"pmsGo/lib/controller"
 )
 
 type admin struct {
+	controller.App
 }
 
 var Admin = &admin{}
