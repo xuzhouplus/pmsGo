@@ -5,19 +5,16 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
-	"errors"
+	"github.com/go-basic/uuid"
 	"io/ioutil"
+	"os"
+	"strings"
 )
 
-func MD5(input string) string {
-	h := md5.New()
-	h.Write([]byte(input))
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-func ReadRsaPubKey(filename string) (*rsa.PublicKey, error) {
+func readRsaPubKey(filename string) (*rsa.PublicKey, error) {
 	//1. 读取公钥文件
 	info, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -28,21 +25,14 @@ func ReadRsaPubKey(filename string) (*rsa.PublicKey, error) {
 	//3. 得到der
 	der := block.Bytes
 	//4. 得到公钥
-	pub, err := x509.ParsePKIXPublicKey(der)
+	pub, err := x509.ParsePKCS1PublicKey(der)
 	if err != nil {
 		return nil, err
 	}
-
-	//断言失败
-	pubkey, ok := pub.(*rsa.PublicKey)
-	if !ok {
-		return nil, errors.New("pubkey no ok")
-	}
-	return pubkey, nil
+	return pub, nil
 }
 
-//读取私钥文件
-func ReadRsaPriKey(filename string) (*rsa.PrivateKey, error) {
+func readRsaPriKey(filename string) (*rsa.PrivateKey, error) {
 	//1. 读取私钥文件
 	info, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -53,46 +43,46 @@ func ReadRsaPriKey(filename string) (*rsa.PrivateKey, error) {
 	//3. 得到der
 	der := block.Bytes
 	//4. 得到私钥
-	pri, err := x509.ParsePKCS8PrivateKey(der)
+	pri, err := x509.ParsePKCS1PrivateKey(der)
 	if err != nil {
 		return nil, err
 	}
-	//断言失败
-	prikey, ok := pri.(*rsa.PrivateKey)
-	if !ok {
-		return nil, errors.New("prikey no ok")
-	}
-	return prikey, nil
+	return pri, nil
 }
 
-//加密
-func RsaEncryptData(filename string, src []byte) ([]byte, error) {
-	//获取公钥
-	pubKey, err := ReadRsaPubKey(filename)
-	if err != nil {
-		return nil, err
+func RsaDecryptByPrivateKey(cipherText string) (string, error) {
+	pwd, error := os.Getwd()
+	if error != nil {
+		return "", error
+	}
+	priKey, error := readRsaPriKey(pwd + "\\config\\rsa_1024_priv.pem")
+	if error != nil {
+		return "", error
 	}
 
-	//加密
-	encryptInfo, err := rsa.EncryptPKCS1v15(rand.Reader, pubKey, src)
-	if err != nil {
-		return nil, err
-	}
-	return encryptInfo, nil
-}
-
-//解密
-func RsaDecryptData(filename string, src []byte) ([]byte, error) {
-	//获取私钥
-	priKey, err := ReadRsaPriKey(filename)
-	if err != nil {
-		return nil, err
+	decrypted, error := base64.StdEncoding.DecodeString(cipherText)
+	if error != nil {
+		return "", error
 	}
 
 	//解密
-	info, err := rsa.DecryptPKCS1v15(rand.Reader, priKey, src)
+	info, err := rsa.DecryptPKCS1v15(rand.Reader, priKey, []byte(decrypted))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return info, nil
+	return string(info), nil
+}
+
+func MD5(text string, salt string) string {
+	ctx := md5.New()
+	ctx.Write([]byte(salt + text))
+	return hex.EncodeToString(ctx.Sum(nil))
+}
+
+func Uuid(separator bool) string {
+	uuid:= uuid.New()
+	if separator{
+		return uuid
+	}
+	return strings.ReplaceAll(uuid, "-", "")
 }
