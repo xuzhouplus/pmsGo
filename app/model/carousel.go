@@ -5,7 +5,7 @@ import (
 	"pmsGo/lib/database"
 )
 
-type carousel struct {
+type Carousel struct {
 	ID          int    `gorm:"private_key" json:"id"`
 	Uuid        string `gorm:"index" json:"uuid"`
 	FileId      int `json:"field_id"`
@@ -20,12 +20,12 @@ type carousel struct {
 	Link        string `json:"link"`
 }
 
-var Carousel = &carousel{}
+var CarouselModel = &Carousel{}
 
-func (model carousel) List(page interface{}, size interface{}, fields interface{}, like interface{}, order interface{}) ([]carousel, error) {
-	var carousels []carousel
+func (model Carousel) List(page interface{}, size interface{}, fields interface{}, like interface{}, order interface{}) ([]Carousel, error) {
+	var carousels []Carousel
 
-	connect := database.Query(&carousel{})
+	connect := database.Query(&Carousel{})
 
 	if size != nil {
 		connect.Limit(size.(int))

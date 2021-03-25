@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/gin-gonic/gin"
 	"pmsGo/lib/config"
+	"pmsGo/lib/database"
 	"pmsGo/middleware"
 	"pmsGo/router"
 	"strconv"
@@ -14,6 +15,7 @@ func Start() {
 		mode = gin.DebugMode
 	}
 	gin.SetMode(mode)
+	database.Init()
 	server := gin.Default()
 	middleware.Middleware(server)
 	router.Router(server)

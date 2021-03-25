@@ -13,13 +13,22 @@ type carousel struct {
 
 var Carousel = &carousel{}
 
-func (controller carousel) Index(c *gin.Context) {
+func (controller carousel) Index(ctx *gin.Context) {
 	requestData := make(map[string]interface{})
-	c.ShouldBind(&requestData)
-	result, err := model.Carousel.List(0, 0, requestData["fields"], requestData["like"], requestData["order"])
+	ctx.ShouldBind(&requestData)
+	result, err := model.CarouselModel.List(0, 0, requestData["fields"], requestData["like"], requestData["order"])
 	if err != nil {
-		c.JSON(http.StatusOK, controller.Response(controller.CodeFail(), result, err.Error()))
+		ctx.JSON(http.StatusOK, controller.Response(controller.CodeFail(), result, err.Error()))
 	} else {
-		c.JSON(http.StatusOK, controller.Response(controller.CodeOk(), result, "获取轮播图列表成功"))
+		ctx.JSON(http.StatusOK, controller.Response(controller.CodeOk(), result, "获取轮播图列表成功"))
+	}
+}
+
+func (controller carousel) List(ctx *gin.Context) {
+	result, err := model.CarouselModel.List(0, 0, nil, nil, nil)
+	if err != nil {
+		ctx.JSON(http.StatusOK, controller.Response(controller.CodeFail(), result, err.Error()))
+	} else {
+		ctx.JSON(http.StatusOK, controller.Response(controller.CodeOk(), result, "获取轮播图列表成功"))
 	}
 }

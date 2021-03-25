@@ -1,32 +1,78 @@
 package auth
 
 import (
-	"fmt"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+	"pmsGo/lib/config"
 	"pmsGo/lib/helper"
 	"strings"
 )
 
+var settings map[interface{}]interface{}
+
+func init() {
+	settings = config.Config.Web["auth"].(map[interface{}]interface{})
+	log.Printf("auth:%T %v \n", settings, settings)
+}
+
+func getRequest(ctx *gin.Context) (string, string) {
+	var controller string
+	var action string
+	uri := ctx.Request.RequestURI
+	splits := strings.Split(uri, "/")
+	leng := len(splits)
+	if leng < 2 {
+		controller = "index"
+		action = "index"
+	} else if leng == 2 {
+		controller = splits[1]
+		action = "index"
+	} else {
+		controller = splits[1]
+		action = splits[2]
+	}
+	return controller, action
+}
+func getAuthType(controller string, action string) interface{} {
+	authSet := settings[controller]
+	if authSet == nil {
+		return nil
+	}
+	authSetMap := authSet.(map[interface{}]interface{})
+	except := authSetMap["except"]
+	if except != nil {
+		exceptSet := except.([]interface{})
+		_, result := helper.IsInSlice(exceptSet, action)
+		if result {
+			return "except"
+		}
+	}
+	optional := authSetMap["optional"]
+	if optional != nil {
+		optionalSet := optional.([]interface{})
+		_, result := helper.IsInSlice(optionalSet, action)
+		if result {
+			return "optional"
+		}
+	}
+	return nil
+}
 func Register() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		requestURI := ctx.Request.RequestURI
-		pathSplit := strings.Split(requestURI, "/")
-		var requestController string
-		var requestAction string
-		pathLen := len(pathSplit)
-		if pathLen < 2 {
-			requestController = "index"
-			requestAction = "index"
-		} else if pathLen == 2 {
-			requestController = pathSplit[1]
-			requestAction = "index"
-		} else {
-			requestController = pathSplit[1]
-			requestAction = pathSplit[2]
+		controller, action := getRequest(ctx)
+		authType := getAuthType(controller, action)
+		log.Printf("controller: %v ,action: %v ,auth: %v\n", controller, action, authType)
+		if authType != "except" {
+			session := sessions.Default(ctx)
+			loginAdmin := session.Get("login_admin")
+			if loginAdmin == nil && authType == nil {
+				ctx.JSON(http.StatusUnauthorized, nil)
+				ctx.Abort()
+				return
+			}
 		}
-		controllerId := helper.FirstToUpper(requestController)
-		actionId := helper.FirstToUpper(requestAction)
-		fmt.Printf("controller:%v action:%v \n", controllerId, actionId)
-		fmt.Println(ctx.Handler())
+		ctx.Next()
 	}
 }

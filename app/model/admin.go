@@ -2,7 +2,7 @@ package model
 
 import (
 	"errors"
-	"fmt"
+	"log"
 	"pmsGo/lib/database"
 	"pmsGo/lib/security"
 	"time"
@@ -13,7 +13,7 @@ const (
 	StatusDisabled = 2
 )
 
-type admin struct {
+type Admin struct {
 	database.Model
 	ID        uint      `gorm:"primarykey" json:"id"`
 	Uuid      string    `gorm:"unique" json:"uuid"`
@@ -25,31 +25,36 @@ type admin struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Salt      string    `json:"_"`
-	Salt      string
 }
 
-var Admin = &admin{}
+var AdminModel = &Admin{}
 
-func (model admin) ValidatePassword(inputPassword string) (bool, error) {
+func (model Admin) ValidatePassword(inputPassword string) (bool, error) {
 	password, err := security.RsaDecryptByPrivateKey(inputPassword)
 	if err != nil {
-		fmt.Printf("password:%e", err)
+		log.Printf("password:%e \n", err)
 		return false, err
 	}
-	password = security.MD5(inputPassword, model.Salt)
-	return password == model.Password, nil
+	password = security.MD5(password, model.Salt)
+	if password == model.Password {
+		return true, nil
+	}
+	return false, errors.New("password wrong")
 }
 
-func (model *admin) SetPassword(inputPassword string) {
+func (model *Admin) SetPassword(inputPassword string) {
 	salt := security.Uuid(true)
 	password := security.MD5(inputPassword, salt)
 	model.Salt = salt
 	model.Password = password
 }
 
-func (model admin) Login(account string, password string) (interface{}, error) {
-	var login admin
-	result := database.Query(&admin{}).Where("account = ? AND password = ?", account, password).First(&login)
+func (model Admin) Login(account string, password string) (Admin, error) {
+	var login Admin
+	if account == "" || password == "" {
+		return login, errors.New("登录失败")
+	}
+	result := database.Query(&Admin{}).Where("account = ?", account).Take(&login)
 	if result.Error != nil {
 		return login, errors.New("登录失败")
 	}
@@ -57,9 +62,6 @@ func (model admin) Login(account string, password string) (interface{}, error) {
 	if validate {
 		return login, nil
 	}
-	return nil, err
+	return login, err
 }
 
-func (model admin) Logout()  {
-
-}

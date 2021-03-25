@@ -6,14 +6,12 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"pmsGo/lib/config"
-	"strconv"
 )
 
 var DB *gorm.DB
 
-func init() {
-	dsn := config.Config.Database.Username + ":" + config.Config.Database.Password + "@tcp(" + config.Config.Database.Host + ":" + strconv.Itoa(config.Config.Database.Port) + ")/" + config.Config.Database.Database + "?charset=" + config.Config.Database.Charset + "&parseTime=True&loc=Local"
-	fmt.Println(dsn)
+func Init() {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=True&loc=Local", config.Config.Database.Username, config.Config.Database.Password, config.Config.Database.Host, config.Config.Database.Database, config.Config.Database.Charset)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix: config.Config.Database.Prefix,
@@ -22,5 +20,9 @@ func init() {
 	if err != nil {
 		fmt.Errorf("unable to connect to database:%err", err)
 	}
-	DB = db
+	if config.Config.Site.Debug {
+		DB = db.Debug()
+	} else {
+		DB = db
+	}
 }

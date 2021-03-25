@@ -2,12 +2,11 @@ package model
 
 import (
 	"errors"
-	"fmt"
 	"pmsGo/lib/database"
 	"time"
 )
 
-type post struct {
+type Post struct {
 	ID        int       `gorm:"private_key" json:"id"`
 	Uuid      string    `gorm:"index" json:"uuid"`
 	Type      string    `json:"type"`
@@ -20,11 +19,11 @@ type post struct {
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-var Post = &post{}
+var PostModel = &Post{}
 
-func (model post) List(page interface{}, size interface{}, fields interface{}, like interface{}, enable interface{}, order interface{}) (map[string]interface{}, error) {
-	var posts []post
-	connect := database.Query(&post{})
+func (model Post) List(page interface{}, size interface{}, fields interface{}, like interface{}, enable interface{}, order interface{}) (map[string]interface{}, error) {
+	var posts []Post
+	connect := database.Query(&Post{})
 	if fields != nil {
 		connect.Select(fields)
 	}
@@ -61,7 +60,6 @@ func (model post) List(page interface{}, size interface{}, fields interface{}, l
 	if result.Error != nil {
 		return returnData, errors.New("获取稿件列表失败")
 	}
-	fmt.Println(result.RowsAffected)
 	returnData["posts"] = posts
 	returnData["size"] = fetchSize
 	returnData["page"] = fetchPage

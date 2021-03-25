@@ -11,6 +11,8 @@ type config struct {
 	Site     site
 	Database database
 	Redis    redis
+	Session session
+	Web      map[string]interface{}
 }
 
 var Config = &config{}

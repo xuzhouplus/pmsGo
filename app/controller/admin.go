@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"encoding/json"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pmsGo/app/model"
@@ -13,13 +15,46 @@ type admin struct {
 
 var Admin = &admin{}
 
-func (admin admin) Login(c *gin.Context) {
+func (ctl admin) Login(ctx *gin.Context) {
 	requestData := make(map[string]string)
-	c.BindJSON(&requestData)
-	loginAdmin, error := model.Admin.Login(requestData["account"], requestData["password"])
+	ctx.ShouldBind(&requestData)
+	loginAdmin, error := model.AdminModel.Login(requestData["account"], requestData["password"])
 	if error != nil {
-		c.JSON(http.StatusOK, admin.response(CodeOk, nil, error.Error()))
+		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeFail, nil, error.Error()))
 	} else {
-		c.JSON(http.StatusOK, admin.response(CodeOk, loginAdmin, "登录成功"))
+		session := sessions.Default(ctx)
+		data, _ := json.Marshal(loginAdmin)
+		session.Set("login_admin", data)
+		session.Save()
+		returnAttr := make(map[string]string)
+		returnAttr["uuid"] = loginAdmin.Uuid
+		returnAttr["type"] = loginAdmin.Type
+		returnAttr["avatar"] = loginAdmin.Avatar
+		returnAttr["account"] = loginAdmin.Account
+		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnAttr, "登录成功"))
 	}
+}
+
+func (ctl admin) Auth(ctx *gin.Context) {
+	returnAttr := make(map[string]interface{})
+	loginAdmin := make(map[string]interface{})
+	session := sessions.Default(ctx)
+	loginData := session.Get("login_admin")
+	json.Unmarshal(loginData.([]byte), &loginAdmin)
+	if loginAdmin != nil {
+		returnAttr["uuid"] = loginAdmin["uuid"]
+		returnAttr["type"] = loginAdmin["type"]
+		returnAttr["avatar"] = loginAdmin["avatar"]
+		returnAttr["account"] = loginAdmin["account"]
+		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnAttr, "获取成功"))
+	} else {
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, returnAttr, "获取失败"))
+	}
+}
+
+func (ctl admin) Logout(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	session.Clear()
+	session.Save()
+	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, nil, "退出成功"))
 }
