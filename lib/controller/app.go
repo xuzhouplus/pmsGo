@@ -33,3 +33,19 @@ func (controller App) Response(code int, data interface{}, message string) *resp
 	returnData.Message = message
 	return returnData
 }
+
+func (controller App) ResponseOk(data interface{}, message string) *response {
+	returnData := &response{}
+	returnData.Code = CodeOk
+	returnData.Data = data
+	returnData.Message = message
+	return returnData
+}
+
+func (controller App) ResponseFail(data interface{}, message string) *response {
+	returnData := &response{}
+	returnData.Code = CodeFail
+	returnData.Data = data
+	returnData.Message = message
+	return returnData
+}

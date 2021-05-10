@@ -67,7 +67,3 @@ func DynamicInvoke(object interface{}, methodName string, args ...interface{}) {
 	//动态访问属性
 	reflect.ValueOf(object).Elem().FieldByName("Name")
 }
-
-func CallStructMethod()  {
-	
-}

@@ -31,3 +31,10 @@ web:
     admin:
       except: [ ]
       optional: [ login,auth,logout ]
+  upload:
+    path: "D:\\GoCode\\src\\pmsGo\\tmp"
+    url: "http://127.0.0.1"
+    extensions: [ "*" ] #支持文件后缀
+    maxSize: "1024M" #最大单个文件大小
+    maxFiles: 10 #最大文件数量
+    mimeTypes: [ "*" ] #支持文件类型

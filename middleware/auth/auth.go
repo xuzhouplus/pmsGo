@@ -14,7 +14,7 @@ var settings map[interface{}]interface{}
 
 func init() {
 	settings = config.Config.Web["auth"].(map[interface{}]interface{})
-	log.Printf("auth:%T %v \n", settings, settings)
+	log.Printf("auth: %v \n", settings)
 }
 
 func getRequest(ctx *gin.Context) (string, string) {

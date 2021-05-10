@@ -55,4 +55,9 @@ func Router(engine *gin.Engine) {
 	{
 		post.GET("", controller.Post.Index)
 	}
+
+	file := engine.Group("/file")
+	{
+		file.POST("", controller.File.Upload)
+	}
 }
