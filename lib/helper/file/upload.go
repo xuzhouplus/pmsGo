@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security"
 	"strconv"
@@ -27,8 +28,8 @@ var Settings = &settings{}
 
 func init() {
 	settings := config.Config.Web["upload"].(map[interface{}]interface{})
-	Settings.path = strings.ReplaceAll(settings["path"].(string), "\\", "/")
-	Settings.url = strings.ReplaceAll(settings["url"].(string), "\\", "/")
+	Settings.path = filepath.FromSlash(settings["path"].(string))
+	Settings.url = filepath.ToSlash(settings["url"].(string))
 	extensions := settings["extensions"].([]interface{})
 	for _, extension := range extensions {
 		Settings.extensions = append(Settings.extensions, extension.(string))
@@ -77,7 +78,7 @@ func (helper *Upload) Upload(ctx *gin.Context, fieldName string, subDir string) 
 	guid := security.Uuid(false)
 	helper.File = subDir + "/" + date + "/" + guid + path.Ext(file.Filename)
 	filePath := Settings.path + helper.File
-	filePath = strings.ReplaceAll(filePath, "\\", "/")
+	filePath = filepath.ToSlash(filePath)
 	err = mkdir(path.Dir(filePath))
 	if err != nil {
 		return err
@@ -90,22 +91,23 @@ func (helper *Upload) Upload(ctx *gin.Context, fieldName string, subDir string) 
 }
 
 func (helper Upload) Path() string {
-	return strings.ReplaceAll(Settings.path+helper.File, "\\", "/")
+	return filepath.FromSlash(Settings.path + helper.File)
 }
 
 func (helper Upload) Url() string {
-	return strings.ReplaceAll(Settings.url+helper.File, "\\", "/")
+	return filepath.ToSlash(Settings.url + helper.File)
 }
 
 func PathToUrl(path string) string {
-	path = strings.ReplaceAll(path, "\\", "/")
+	path = filepath.FromSlash(path)
 	path = strings.Replace(path, Settings.path, Settings.url, 1)
-	return strings.ReplaceAll(path, "\\", "/")
+	return filepath.ToSlash(path)
 }
 
 func UrlToPath(url string) string {
-	url = strings.ReplaceAll(url, "\\", "/")
-	return strings.Replace(url, Settings.url, Settings.path, 1)
+	url = filepath.ToSlash(url)
+	url = strings.Replace(url, Settings.url, Settings.path, 1)
+	return filepath.FromSlash(url)
 }
 
 func validateExtensions(fileExtension string) error {
