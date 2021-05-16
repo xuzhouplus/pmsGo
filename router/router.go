@@ -8,11 +8,12 @@ import (
 )
 
 func Router(engine *gin.Engine) {
+	engine.Static("/public", "./public")
 	engine.Use(session.Register())
 	admin := engine.Group("/admin")
 	{
 		admin.POST("/login", auth.Register(), controller.Admin.Login)
-		admin.Any("/auth", auth.Register(), controller.Admin.Auth)
+		admin.POST("/auth", auth.Register(), controller.Admin.Auth)
 		admin.POST("/logout", auth.Register(), controller.Admin.Logout)
 	}
 
@@ -49,15 +50,21 @@ func Router(engine *gin.Engine) {
 	{
 		carousel.GET("", controller.Carousel.Index)
 		carousel.GET("/list", auth.Register(), controller.Carousel.List)
+		carousel.POST("/create", auth.Register(), controller.Carousel.Create)
+		carousel.POST("/delete", auth.Register(), controller.Carousel.Delete)
 	}
 
 	post := engine.Group("/post")
 	{
 		post.GET("", controller.Post.Index)
+
 	}
 
 	file := engine.Group("/file")
 	{
-		file.POST("", controller.File.Upload)
+		file.GET("", controller.File.Index)
+		file.POST("/upload", controller.File.Upload)
+		file.POST("/delete", controller.File.Delete)
 	}
+
 }

@@ -16,9 +16,10 @@ func Init() {
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix: config.Config.Database.Prefix,
 		},
+		SkipDefaultTransaction: true,
 	})
 	if err != nil {
-		fmt.Errorf("unable to connect to database:%err", err)
+		fmt.Printf("unable to connect to database:%err \n", err)
 	}
 	if config.Config.Site.Debug {
 		DB = db.Debug()

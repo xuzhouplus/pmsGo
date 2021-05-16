@@ -1,18 +1,14 @@
-package file
+package image
 
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"pmsGo/lib/config"
-	"pmsGo/lib/security"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type settings struct {
@@ -25,6 +21,10 @@ type settings struct {
 }
 
 var Settings = &settings{}
+
+type Url string
+
+type Path string
 
 func init() {
 	settings := config.Config.Web["upload"].(map[interface{}]interface{})
@@ -43,71 +43,50 @@ func init() {
 	log.Printf("Upload: %v \n", Settings)
 }
 
-type Upload struct {
-	ctx       *gin.Context
-	File      string `json:"file"`
-	MimeType  string `json:"mimeType"`
-	Extension string `json:"extension"`
-	Size      int64  `json:"size"`
-}
-
-func (helper *Upload) Upload(ctx *gin.Context, fieldName string, subDir string) error {
-	helper.ctx = ctx
-	file, err := ctx.FormFile(fieldName)
+func Remove(fullPath string) error {
+	path := UrlToPath(Url(fullPath))
+	filePath := string(path)
+	_, err := os.Stat(filePath)
 	if err != nil {
 		return err
 	}
-	log.Printf("Upload file:%v \n", file.Header)
-	helper.MimeType = file.Header.Get("Content-Type")
-	err = validateMimeType(helper.MimeType)
-	if err != nil {
-		return err
-	}
-	helper.Extension = path.Ext(file.Filename)
-	err = validateExtensions(helper.Extension)
-	if err != nil {
-		return err
-	}
-	helper.Size = file.Size
-	err = validateMaxSize(helper.Size)
-	if err != nil {
-		return err
-	}
-	now := time.Now()
-	date := now.Format("2006-01-02")
-	guid := security.Uuid(false)
-	helper.File = subDir + "/" + date + "/" + guid + path.Ext(file.Filename)
-	filePath := Settings.path + helper.File
-	filePath = filepath.ToSlash(filePath)
-	err = mkdir(path.Dir(filePath))
-	if err != nil {
-		return err
-	}
-	err = ctx.SaveUploadedFile(file, filePath)
+	err = os.Remove(filePath)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (helper Upload) Path() string {
-	return filepath.FromSlash(Settings.path + helper.File)
+func FullUrl(relativeUrl string) string {
+	url := PathToUrl(Path(relativeUrl))
+	return Settings.url + string(url)
 }
 
-func (helper Upload) Url() string {
-	return filepath.ToSlash(Settings.url + helper.File)
+func FullPath(relativePath string) string {
+	path := UrlToPath(Url(relativePath))
+	return Settings.path + string(path)
 }
 
-func PathToUrl(path string) string {
-	path = filepath.FromSlash(path)
-	path = strings.Replace(path, Settings.path, Settings.url, 1)
-	return filepath.ToSlash(path)
+func PathToUrl(path Path) Url {
+	pathString := string(path)
+	pathString = filepath.FromSlash(pathString)
+	pathString = strings.Replace(pathString, Settings.path, Settings.url, 1)
+	return Url(filepath.ToSlash(pathString))
 }
 
-func UrlToPath(url string) string {
-	url = filepath.ToSlash(url)
-	url = strings.Replace(url, Settings.url, Settings.path, 1)
-	return filepath.FromSlash(url)
+func UrlToPath(url Url) Path {
+	urlString := string(url)
+	urlString = filepath.ToSlash(urlString)
+	urlString = strings.Replace(urlString, Settings.url, Settings.path, 1)
+	return Path(filepath.FromSlash(urlString))
+}
+
+func RelativeUrl(url Url) string {
+	return strings.TrimPrefix(string(url), Settings.url)
+}
+
+func RelativePath(path Path) string {
+	return strings.TrimPrefix(string(path), Settings.path)
 }
 
 func validateExtensions(fileExtension string) error {

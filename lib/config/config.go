@@ -25,12 +25,12 @@ func init() {
 	}
 	file, error := ioutil.ReadFile(pwd + "\\config\\app.yaml")
 	if error != nil {
-		fmt.Printf("Can`t read config file:%err\n", error)
+		fmt.Printf("Can`t read config image:%err\n", error)
 		return
 	}
 
 	error = yaml.Unmarshal(file, Config)
 	if error != nil {
-		fmt.Errorf("Can`t analyse config file:%err\n", error)
+		fmt.Errorf("Can`t analyse config image:%err\n", error)
 	}
 }

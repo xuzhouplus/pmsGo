@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"math"
 	"pmsGo/lib/database"
 	"time"
 )
@@ -18,6 +19,11 @@ type Post struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+const (
+	PostStatusEnable  = "1"
+	PostStatusDisable = "2"
+)
 
 var PostModel = &Post{}
 
@@ -63,6 +69,59 @@ func (model Post) List(page interface{}, size interface{}, fields interface{}, l
 	returnData["posts"] = posts
 	returnData["size"] = fetchSize
 	returnData["page"] = fetchPage
-	//returnData["count"] = connect.Count(&posts)
+	var total int64
+	result = connect.Count(&total)
+	if result.Error != nil {
+		return returnData, errors.New("获取稿件总数失败")
+	}
+	returnData["total"] = total
+	returnData["count"] = math.Ceil(float64(int(total) / fetchSize))
 	return returnData, nil
+}
+func (model Post) FindOneById(id int) (*Post, error) {
+	one := &Post{}
+	connect := database.Query(&Post{})
+	connect.Where("id = ?", id)
+	connect.Limit(1)
+	result := connect.First(&one)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return one, nil
+}
+func (model Post) FindOneByUuid(uuid string) (*Post, error) {
+	one := &Post{}
+	connect := database.Query(&Post{})
+	connect.Where("uuid = ?", uuid)
+	connect.Limit(1)
+	result := connect.First(&one)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return one, nil
+}
+func (model Post) Create() {
+
+}
+func (model Post) Update() {
+
+}
+func (model Post) Delete() {
+
+}
+func (model Post) View() {
+
+}
+func (model *Post) Toggle() error {
+	if model.Status == PostStatusEnable {
+		model.Status = PostStatusDisable
+	} else {
+		model.Status = PostStatusEnable
+	}
+	connect := database.Query(&Post{})
+	result := connect.Save(&model)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }

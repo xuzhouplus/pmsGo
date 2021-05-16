@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"pmsGo/app/model"
 	"pmsGo/lib/controller"
@@ -40,7 +41,15 @@ func (ctl admin) Auth(ctx *gin.Context) {
 	loginAdmin := make(map[string]interface{})
 	session := sessions.Default(ctx)
 	loginData := session.Get("login_admin")
-	json.Unmarshal(loginData.([]byte), &loginAdmin)
+	if loginData == nil {
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, returnAttr, "获取失败"))
+		return
+	}
+	err := json.Unmarshal(loginData.([]byte), &loginAdmin)
+	if err != nil {
+		log.Println(err)
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, returnAttr, "获取失败"))
+	}
 	if loginAdmin != nil {
 		returnAttr["uuid"] = loginAdmin["uuid"]
 		returnAttr["type"] = loginAdmin["type"]
