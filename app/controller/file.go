@@ -3,9 +3,10 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"pmsGo/app/model"
+	"pmsGo/app/service"
 	"pmsGo/lib/controller"
-	fileHelper "pmsGo/lib/helper/image"
+	"pmsGo/lib/helper/image"
+	"strconv"
 )
 
 type file struct {
@@ -15,13 +16,14 @@ type file struct {
 var File = &file{}
 
 func (cto file) Index(ctx *gin.Context) {
-	requestData := make(map[string]interface{})
-	err := ctx.ShouldBind(&requestData)
-	if err != nil {
-		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
-		return
-	}
-	list, err := model.FileModel.List(requestData["page"], requestData["limit"], requestData["select"], requestData["type"], requestData["name"])
+	page := ctx.Query("page")
+	pageNum, _ := strconv.Atoi(page)
+	limit := ctx.Query("limit")
+	limitNum, _ := strconv.Atoi(limit)
+	fields := ctx.QueryArray("select[]")
+	fileType := ctx.Query("type")
+	name := ctx.Query("name")
+	list, err := service.FileService.List(pageNum, limitNum, fields, fileType, name)
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 		return
@@ -30,13 +32,16 @@ func (cto file) Index(ctx *gin.Context) {
 }
 
 func (cto file) Upload(ctx *gin.Context) {
-	upload := &fileHelper.Upload{}
-	err := upload.Upload(ctx, "file", "/image")
+	upload, err := image.Upload(ctx, "file", "/image")
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 	} else {
-		model.FileModel.Upload(upload, ctx.PostForm("name"), ctx.PostForm("description"))
-		ctx.JSON(http.StatusOK, cto.ResponseOk(model.FileModel, "success"))
+		fileModel, err := service.FileService.Upload(upload, ctx.PostForm("name"), ctx.PostForm("description"))
+		if err != nil {
+			ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+			return
+		}
+		ctx.JSON(http.StatusOK, cto.ResponseOk(fileModel, "success"))
 	}
 }
 
@@ -47,7 +52,7 @@ func (cto file) Delete(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 		return
 	}
-	err = model.FileModel.Delete(requestData["id"])
+	err = service.FileService.Delete(requestData["id"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 		return

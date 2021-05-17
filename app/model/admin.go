@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	StatusEnabled  = 1
-	StatusDisabled = 2
+	AdminStatusEnabled  = 1
+	AdminStatusDisabled = 2
 )
 
 type Admin struct {
@@ -26,8 +26,6 @@ type Admin struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	Salt      string    `json:"_"`
 }
-
-var AdminModel = &Admin{}
 
 func (model Admin) ValidatePassword(inputPassword string) (bool, error) {
 	password, err := security.RsaDecryptByPrivateKey(inputPassword)
@@ -48,20 +46,3 @@ func (model *Admin) SetPassword(inputPassword string) {
 	model.Salt = salt
 	model.Password = password
 }
-
-func (model Admin) Login(account string, password string) (Admin, error) {
-	var login Admin
-	if account == "" || password == "" {
-		return login, errors.New("登录失败")
-	}
-	result := database.Query(&Admin{}).Where("account = ?", account).Take(&login)
-	if result.Error != nil {
-		return login, errors.New("登录失败")
-	}
-	validate, err := login.ValidatePassword(password)
-	if validate {
-		return login, nil
-	}
-	return login, err
-}
-

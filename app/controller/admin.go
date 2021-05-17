@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"pmsGo/app/model"
+	"pmsGo/app/service"
 	"pmsGo/lib/controller"
 )
 
@@ -19,7 +19,7 @@ var Admin = &admin{}
 func (ctl admin) Login(ctx *gin.Context) {
 	requestData := make(map[string]string)
 	ctx.ShouldBind(&requestData)
-	loginAdmin, error := model.AdminModel.Login(requestData["account"], requestData["password"])
+	loginAdmin, error := service.AdminService.Login(requestData["account"], requestData["password"])
 	if error != nil {
 		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeFail, nil, error.Error()))
 	} else {

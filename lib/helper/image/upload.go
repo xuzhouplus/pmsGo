@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type Upload struct {
+type Instance struct {
 	ctx       *gin.Context
 	File      string `json:"image"`
 	MimeType  string `json:"mimeType"`
@@ -17,27 +17,28 @@ type Upload struct {
 	Size      int64  `json:"size"`
 }
 
-func (helper *Upload) Upload(ctx *gin.Context, fieldName string, subDir string) error {
+func Upload(ctx *gin.Context, fieldName string, subDir string) (*Instance, error) {
+	helper := &Instance{}
 	helper.ctx = ctx
 	file, err := ctx.FormFile(fieldName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Printf("Upload image:%v \n", file.Header)
 	helper.MimeType = file.Header.Get("Content-Type")
 	err = validateMimeType(helper.MimeType)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	helper.Extension = path.Ext(file.Filename)
 	err = validateExtensions(helper.Extension)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	helper.Size = file.Size
 	err = validateMaxSize(helper.Size)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	now := time.Now()
 	date := now.Format("2006-01-02")
@@ -47,19 +48,19 @@ func (helper *Upload) Upload(ctx *gin.Context, fieldName string, subDir string) 
 	filePath = filepath.ToSlash(filePath)
 	err = mkdir(path.Dir(filePath))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = ctx.SaveUploadedFile(file, filePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return helper, nil
 }
 
-func (helper Upload) Path() Path {
+func (helper Instance) Path() Path {
 	return Path(filepath.FromSlash(Settings.path + helper.File))
 }
 
-func (helper Upload) Url() Url {
+func (helper Instance) Url() Url {
 	return Url(filepath.ToSlash(Settings.url + helper.File))
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pmsGo/app/model"
+	"pmsGo/app/service"
 	"pmsGo/lib/controller"
 	"pmsGo/lib/helper/image"
 	"strconv"
@@ -23,7 +24,7 @@ func (controller carousel) Index(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, controller.Response(controller.CodeFail(), nil, err.Error()))
 		return
 	}
-	result, err := model.CarouselModel.List(0, 0, requestData["fields"], requestData["like"], requestData["order"])
+	result, err := service.CarouselService.List(0, 0, requestData["fields"], requestData["like"], requestData["order"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, controller.Response(controller.CodeFail(), nil, err.Error()))
 	} else {
@@ -32,13 +33,13 @@ func (controller carousel) Index(ctx *gin.Context) {
 }
 
 func (controller carousel) List(ctx *gin.Context) {
-	list, err := model.CarouselModel.List(0, 0, nil, nil, nil)
+	list, err := service.CarouselService.List(0, 0, nil, nil, nil)
 	if err != nil {
 		ctx.JSON(http.StatusOK, controller.Response(controller.CodeFail(), nil, err.Error()))
 	} else {
 		data := make(map[string]interface{})
 		data["list"] = list
-		carouselLimit, _ := strconv.Atoi(model.CarouselSettingModel.GetSetting(model.SettingKeyCarouselLimit))
+		carouselLimit, _ := strconv.Atoi(service.SettingService.GetSetting(model.SettingKeyCarouselLimit))
 		fmt.Println(carouselLimit)
 		data["limit"] = carouselLimit
 		ctx.JSON(http.StatusOK, controller.Response(controller.CodeOk(), data, "获取轮播图列表成功"))
@@ -58,33 +59,31 @@ func (controller carousel) Create(ctx *gin.Context) {
 	link := requestLink.(string)
 	requestOrder := requestData["order"]
 	order := requestOrder.(float64)
-	err := model.CarouselModel.Create(int(fileId), title, description, link, int(order))
+	carousel, err := service.CarouselService.Create(int(fileId), title, description, link, int(order))
 	if err != nil {
 		ctx.JSON(http.StatusOK, controller.ResponseFail(nil, err.Error()))
 		return
 	}
-	data := model.CarouselModel
-	data.Url = image.FullUrl(data.Url)
-	data.Thumb = image.FullUrl(data.Thumb)
-	ctx.JSON(http.StatusOK, controller.ResponseOk(data, "success"))
+	carousel.Url = image.FullUrl(carousel.Url)
+	carousel.Thumb = image.FullUrl(carousel.Thumb)
+	ctx.JSON(http.StatusOK, controller.ResponseOk(carousel, "success"))
 }
-func (controller carousel) Update(ctx *gin.Context) {
 
-}
 func (controller carousel) Delete(ctx *gin.Context) {
 	requestData := make(map[string]int)
 	ctx.ShouldBind(&requestData)
-	err := model.CarouselModel.Delete(requestData["id"])
+	err := service.CarouselService.Delete(requestData["id"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, controller.ResponseFail(nil, err.Error()))
 		return
 	}
 	ctx.JSON(http.StatusOK, controller.ResponseOk(nil, "success"))
 }
+
 func (controller carousel) Preview(ctx *gin.Context) {
 	requestData := make(map[string]int)
 	ctx.ShouldBind(&requestData)
-	preview, err := model.CarouselModel.Preview(requestData["file_id"])
+	preview, err := service.CarouselService.Preview(requestData["file_id"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, controller.ResponseFail(nil, err.Error()))
 		return

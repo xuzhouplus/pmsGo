@@ -57,14 +57,18 @@ func Router(engine *gin.Engine) {
 	post := engine.Group("/post")
 	{
 		post.GET("", controller.Post.Index)
-
+		post.GET("/list", auth.Register(), controller.Post.List)
+		post.POST("/save", auth.Register(), controller.Post.Save)
+		post.POST("/delete", auth.Register(), controller.Post.Delete)
+		post.POST("/toggle-status", auth.Register(), controller.Post.ToggleStatus)
+		post.GET("/detail", controller.Post.Detail)
 	}
 
 	file := engine.Group("/file")
 	{
-		file.GET("", controller.File.Index)
-		file.POST("/upload", controller.File.Upload)
-		file.POST("/delete", controller.File.Delete)
+		file.GET("", auth.Register(), controller.File.Index)
+		file.POST("/upload", auth.Register(), controller.File.Upload)
+		file.POST("/delete", auth.Register(), controller.File.Delete)
 	}
 
 }

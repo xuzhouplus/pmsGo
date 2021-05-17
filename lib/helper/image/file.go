@@ -58,11 +58,17 @@ func Remove(fullPath string) error {
 }
 
 func FullUrl(relativeUrl string) string {
+	if strings.HasPrefix(relativeUrl, Settings.url) {
+		return relativeUrl
+	}
 	url := PathToUrl(Path(relativeUrl))
 	return Settings.url + string(url)
 }
 
 func FullPath(relativePath string) string {
+	if strings.HasPrefix(relativePath, Settings.path) {
+		return relativePath
+	}
 	path := UrlToPath(Url(relativePath))
 	return Settings.path + string(path)
 }
