@@ -16,10 +16,6 @@ type Setting struct {
 
 var SettingService = &Setting{}
 
-func (service *Setting) Setting() {
-	SettingService.GetSettings([]string{})
-}
-
 func (service Setting) GetPublicSettings() (map[string]interface{}, error) {
 	var returnData = make(map[string]interface{})
 	var data []model.Setting
@@ -46,6 +42,9 @@ func (service Setting) GetSetting(key string) string {
 	return record.Value
 }
 func (service *Setting) SetSetting(key string, value string) {
+	if service.Settings == nil {
+		service.Settings = make(map[string]string)
+	}
 	service.Settings[key] = value
 }
 func (service Setting) GetSettings(keys []string) map[string]string {

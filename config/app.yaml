@@ -6,7 +6,7 @@ site:
   cors: true
 
 database:
-  host: 127.0.0.1:33060
+  host: 127.0.0.1:3306
   username: homestead
   password: secret
   database: pms
@@ -32,7 +32,7 @@ web:
       except: [ ]
       optional: [ login,auth,logout ]
   upload:
-    path: "D:\\GoCode\\src\\pmsGo\\public\\upload"
+    path: "D:\\GoCode\\pmsGo\\public\\upload"
     url: "http://web.pms.test/go/public/upload"
     extensions: [ "*" ] #支持文件后缀
     maxSize: "1024M" #最大单个文件大小
