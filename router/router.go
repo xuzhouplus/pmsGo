@@ -15,6 +15,10 @@ func Router(engine *gin.Engine) {
 		admin.POST("/login", auth.Register(), controller.Admin.Login)
 		admin.POST("/auth", auth.Register(), controller.Admin.Auth)
 		admin.POST("/logout", auth.Register(), controller.Admin.Logout)
+		admin.GET("/profile", auth.Register(), controller.Admin.Profile)
+		admin.GET("/connects", auth.Register(), controller.Admin.Connects)
+		admin.GET("/authorize", auth.Register(), controller.Admin.AuthorizeUrl)
+		admin.GET("/authorize-user", auth.Register(), controller.Admin.AuthorizeUser)
 	}
 
 	setting := engine.Group("/setting")

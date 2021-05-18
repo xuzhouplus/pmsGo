@@ -21,7 +21,7 @@ type Admin struct {
 	Account   string    `gorm:"uniqueIndex" json:"account"`
 	Avatar    string    `json:"avatar"`
 	Password  string    `json:"_"`
-	Status    string    `json:"status"`
+	Status    int    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Salt      string    `json:"_"`

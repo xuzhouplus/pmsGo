@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -66,11 +67,20 @@ func Register() gin.HandlerFunc {
 		log.Printf("controller: %v ,action: %v ,auth: %v\n", controller, action, authType)
 		if authType != "except" {
 			session := sessions.Default(ctx)
-			loginAdmin := session.Get("login_admin")
-			if loginAdmin == nil && authType == nil {
+			sessionAdmin := session.Get("login_admin")
+			if sessionAdmin == nil && authType == nil {
 				ctx.JSON(http.StatusUnauthorized, nil)
 				ctx.Abort()
 				return
+			}
+			if sessionAdmin != nil {
+				loginAdmin := make(map[string]interface{})
+				err := json.Unmarshal(sessionAdmin.([]byte), &loginAdmin)
+				if err!=nil {
+					log.Printf("解析session数据失败,%e", err)
+				}else {
+					ctx.Set("loginAdmin", loginAdmin)
+				}
 			}
 		}
 		ctx.Next()

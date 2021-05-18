@@ -27,18 +27,54 @@ func (setting setting) Index(c *gin.Context) {
 }
 
 func (setting setting) Site(ctx *gin.Context) {
-	result := service.SettingService.Find(model.SiteSettingModel.Keys(), "key")
-	ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, result, "获取成功"))
+	if ctx.Request.Method == "GET" {
+		result := service.SettingService.Find(model.SiteSettingModel.Keys(), "key")
+		ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, result, "获取成功"))
+	} else {
+		var keyPairs = make(map[string]interface{})
+		ctx.ShouldBind(&keyPairs)
+		err := service.SettingService.Save(keyPairs)
+		if err != nil {
+			ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
+			return
+		}
+		ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, nil, "保存成功"))
+	}
 }
 
 func (setting setting) Carousel(ctx *gin.Context) {
-	list := service.SettingService.Find(model.CarouselSettingModel.Keys(), "key")
-	ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, list, "获取成功"))
+	if ctx.Request.Method == "GET" {
+		list := service.SettingService.Find(model.CarouselSettingModel.Keys(), "key")
+		ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, list, "获取成功"))
+	} else {
+		var keyPairs = make(map[string]interface{})
+		ctx.ShouldBind(&keyPairs)
+		err := service.SettingService.Save(keyPairs)
+		if err != nil {
+			ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
+			return
+		}
+		ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, nil, "保存成功"))
+	}
 }
 
 func (setting setting) Alipay(ctx *gin.Context) {
-	result := service.SettingService.GetSettings(model.AlipaySettingModel.Keys())
-	ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, result, "获取成功"))
+	if ctx.Request.Method == "GET" {
+		result := service.SettingService.GetSettings(model.AlipaySettingModel.Keys())
+		ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, result, "获取成功"))
+	}else {
+		var keyPairs = make(map[string]interface{})
+		ctx.ShouldBind(&keyPairs)
+		if keyPairs[model.SettingKeyAlipayAppPrimaryKey] != nil {
+
+		}
+		err := service.SettingService.Save(keyPairs)
+		if err != nil {
+			ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
+			return
+		}
+		ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, nil, "保存成功"))
+	}
 }
 
 func (setting setting) SaveAlipay(ctx *gin.Context) {
