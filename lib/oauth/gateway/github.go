@@ -48,8 +48,18 @@ func NewGitHub() (*GitHub, error) {
 		return nil, errors.New("GitHub配置获取失败")
 	}
 	gitHub.GithubAppId = settings[model.SettingKeyGithubAppId]
+	if gitHub.GithubAppId == "" {
+		return nil, errors.New("缺少配置:" + model.SettingKeyGithubAppId)
+	}
 	gitHub.GithubApplicationName = settings[model.SettingKeyGithubApplicationName]
-	decrypt, err := encrypt.Decrypt([]byte(settings[model.SettingKeyGithubAppSecret]), []byte(config.Config.Web.Security["salt"]))
+	if gitHub.GithubApplicationName == "" {
+		return nil, errors.New("缺少配置:" + model.SettingKeyGithubApplicationName)
+	}
+	secret := settings[model.SettingKeyGithubAppSecret]
+	if secret == "" {
+		return nil, errors.New("缺少配置:" + model.SettingKeyGithubAppSecret)
+	}
+	decrypt, err := encrypt.Decrypt([]byte(secret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {
 		return nil, err
 	}

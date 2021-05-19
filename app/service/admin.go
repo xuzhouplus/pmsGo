@@ -52,8 +52,8 @@ func (service Admin) Login(account string, password string) (*model.Admin, error
 		return nil, errors.New("登录失败")
 	}
 	validate, err := admin.ValidatePassword(password)
-	if validate {
-		return nil, nil
+	if !validate {
+		return nil, err
 	}
 	return admin, err
 }
@@ -71,13 +71,19 @@ func (service Admin) Update(postData map[string]interface{}) (*model.Admin, erro
 	if admin == nil {
 		return nil, errors.New("账号不存在")
 	}
-	admin.Avatar = postData["avatar"].(string)
-	password, err := rsa.DecryptByPrivateKey(postData["password"].(string))
-	if err != nil {
-		log.Printf("password:%e \n", err)
-		return nil, err
+	avatar := postData["avatar"].(string)
+	if avatar != "" {
+		admin.Avatar = avatar
 	}
-	admin.SetPassword(password)
+	password := postData["password"].(string)
+	if password != "" {
+		password, err := rsa.DecryptByPrivateKey(password)
+		if err != nil {
+			log.Printf("password:%e \n", err)
+			return nil, err
+		}
+		admin.SetPassword(password)
+	}
 	admin.Status = int(postData["status"].(float64))
 	connect := database.Query(&model.Admin{})
 	result := connect.Where("uuid = ?", admin.Uuid).Save(&admin)

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/random"
 	"regexp"
 	"time"
@@ -61,17 +62,8 @@ func Upload(ctx *gin.Context, fieldName string, subDir string) (*Instance, error
 	return helper, nil
 }
 
-func Base64Upload(ctx *gin.Context, fieldName string, subDir string) (*Instance, error) {
+func Base64Upload(base64Content string, subDir string) (*Instance, error) {
 	helper := &Instance{}
-	helper.ctx = ctx
-	//获取请求数据
-	postData := make(map[string]interface{})
-	ctx.ShouldBind(&postData)
-	if postData[fieldName] == nil {
-		return nil, errors.New("字段数据为空")
-	}
-	//获取请求内容
-	base64Content := postData[fieldName].(string)
 	//验证图片格式
 	matched, _ := regexp.MatchString(`^data:\s*image\/(\w+);base64,`, base64Content)
 	if !matched {
@@ -96,7 +88,7 @@ func Base64Upload(ctx *gin.Context, fieldName string, subDir string) (*Instance,
 		return nil, err
 	}
 	//写入文件
-	err = ioutil.WriteFile(filePath, []byte(base64Str), os.ModePerm)
+	err = ioutil.WriteFile(filePath, base64.Decode(base64Str), os.ModePerm)
 	if err != nil {
 		return nil, err
 	}

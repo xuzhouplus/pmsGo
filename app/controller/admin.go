@@ -24,9 +24,9 @@ var Admin = &admin{}
 func (ctl admin) Login(ctx *gin.Context) {
 	requestData := make(map[string]string)
 	ctx.ShouldBind(&requestData)
-	loginAdmin, error := service.AdminService.Login(requestData["account"], requestData["password"])
-	if error != nil {
-		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeFail, nil, error.Error()))
+	loginAdmin, err := service.AdminService.Login(requestData["account"], requestData["password"])
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeFail, nil, err.Error()))
 	} else {
 		session := sessions.Default(ctx)
 		data, _ := json.Marshal(loginAdmin)
@@ -75,14 +75,13 @@ func (ctl admin) Logout(ctx *gin.Context) {
 
 func (ctl admin) Profile(ctx *gin.Context) {
 	loginAdmin := make(map[string]interface{})
-	session := sessions.Default(ctx)
-	loginData := session.Get("login_admin")
+	loginData, _ := ctx.Get("loginAdmin")
 	if loginData == nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
 	}
-	err := json.Unmarshal(loginData.([]byte), &loginAdmin)
-	if err != nil {
+	loginAdmin = loginData.(map[string]interface{})
+	if loginAdmin == nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
 	}
@@ -97,12 +96,12 @@ func (ctl admin) Profile(ctx *gin.Context) {
 		requestData := make(map[string]interface{})
 		ctx.ShouldBind(&requestData)
 		if requestData["avatar"] != nil {
-			instance, err := image.Base64Upload(ctx, "avatar", "/avatar")
+			instance, err := image.Base64Upload(requestData["avatar"].(string), "/avatar")
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 				return
 			}
-			requestData["avatar"] = instance.Url()
+			requestData["avatar"] = string(instance.Url())
 		}
 		admin, err := service.AdminService.Update(requestData)
 		if err != nil {
@@ -136,14 +135,14 @@ func (ctl admin) Connects(ctx *gin.Context) {
 
 func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	gatewayType := gateway.GitHubGatewayType
-	oauth, err := oauth.NewOauth(gatewayType)
+	oauthGateway, err := oauth.NewOauth(gatewayType)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
 	redirect := config.Config.Web.Host + "/profile/authorize/" + gatewayType
 	state := random.Uuid(false)
-	authorizeUrl := oauth.AuthorizeUrl("", redirect, state)
+	authorizeUrl := oauthGateway.AuthorizeUrl("", redirect, state)
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, authorizeUrl, "获取成功"))
 }
 
@@ -151,18 +150,18 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 	code := ctx.Query("code")
 	state := ctx.Query("state")
 	gatewayType := ctx.Query("gateway")
-	oauth, err := oauth.NewOauth(gatewayType)
+	oauthGateway, err := oauth.NewOauth(gatewayType)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
 	redirect := config.Config.Web.Host + "/profile/authorize/" + gatewayType
-	token, err := oauth.AccessToken(code, redirect, state)
+	token, err := oauthGateway.AccessToken(code, redirect, state)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
-	user, err := oauth.User(token)
+	user, err := oauthGateway.User(token)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return

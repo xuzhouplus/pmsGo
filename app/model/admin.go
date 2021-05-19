@@ -35,6 +35,7 @@ func (model Admin) ValidatePassword(inputPassword string) (bool, error) {
 		log.Printf("password:%e \n", err)
 		return false, err
 	}
+
 	password = md5.Md5(password, model.Salt)
 	if password == model.Password {
 		return true, nil
