@@ -12,7 +12,7 @@ import (
 	"pmsGo/lib/helper/image"
 	"pmsGo/lib/oauth"
 	"pmsGo/lib/oauth/gateway"
-	"pmsGo/lib/security"
+	"pmsGo/lib/security/random"
 )
 
 type admin struct {
@@ -141,8 +141,8 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
-	redirect := config.Config.Web["host"].(string) + "/profile/authorize/" + gatewayType
-	state := security.Uuid(false)
+	redirect := config.Config.Web.Host + "/profile/authorize/" + gatewayType
+	state := random.Uuid(false)
 	authorizeUrl := oauth.AuthorizeUrl("", redirect, state)
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, authorizeUrl, "获取成功"))
 }
@@ -156,7 +156,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
-	redirect := config.Config.Web["host"].(string) + "/profile/authorize/" + gatewayType
+	redirect := config.Config.Web.Host + "/profile/authorize/" + gatewayType
 	token, err := oauth.AccessToken(code, redirect, state)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))

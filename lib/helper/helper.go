@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"log"
 	"math/rand"
 	"reflect"
 	"time"
@@ -43,13 +42,11 @@ func RandomString(length int) string {
 	return string(salt)
 }
 
-func IsInSlice(slice []interface{}, val string) (int, bool) {
-	log.Println(slice)
+func IsInSlice(slice []string, val string) (int, bool) {
 	if len(slice) == 0 {
 		return -1, false
 	}
 	for i, item := range slice {
-		log.Println(item)
 		if item == val {
 			return i, true
 		}

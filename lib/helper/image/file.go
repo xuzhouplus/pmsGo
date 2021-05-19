@@ -27,18 +27,18 @@ type Url string
 type Path string
 
 func init() {
-	settings := config.Config.Web["upload"].(map[interface{}]interface{})
-	Settings.path = filepath.FromSlash(settings["path"].(string))
-	Settings.url = filepath.ToSlash(settings["url"].(string))
-	extensions := settings["extensions"].([]interface{})
+	settings := config.Config.Web.Upload
+	Settings.path = filepath.FromSlash(settings.Path)
+	Settings.url = filepath.ToSlash(settings.Url)
+	extensions := settings.Extensions
 	for _, extension := range extensions {
-		Settings.extensions = append(Settings.extensions, extension.(string))
+		Settings.extensions = append(Settings.extensions, extension)
 	}
-	Settings.maxSize = sizeToBytes(settings["maxSize"])
-	Settings.maxFiles = settings["maxFiles"].(int)
-	mimeTypes := settings["mimeTypes"].([]interface{})
+	Settings.maxSize = sizeToBytes(settings.MaxSize)
+	Settings.maxFiles = settings.MaxFiles
+	mimeTypes := settings.MimeTypes
 	for _, mimeType := range mimeTypes {
-		Settings.mimeTypes = append(Settings.mimeTypes, mimeType.(string))
+		Settings.mimeTypes = append(Settings.mimeTypes, mimeType)
 	}
 	log.Printf("Upload: %v \n", Settings)
 }

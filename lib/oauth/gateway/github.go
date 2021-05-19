@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"pmsGo/app/model"
 	"pmsGo/app/service"
+	"pmsGo/lib/config"
+	"pmsGo/lib/security/encrypt"
 )
 
 const GitHubGatewayType = "github"
@@ -47,7 +49,11 @@ func NewGitHub() (*GitHub, error) {
 	}
 	gitHub.GithubAppId = settings[model.SettingKeyGithubAppId]
 	gitHub.GithubApplicationName = settings[model.SettingKeyGithubApplicationName]
-	gitHub.GithubAppSecret = settings[model.SettingKeyGithubAppSecret]
+	decrypt, err := encrypt.Decrypt([]byte(settings[model.SettingKeyGithubAppSecret]), []byte(config.Config.Web.Security["salt"]))
+	if err != nil {
+		return nil, err
+	}
+	gitHub.GithubAppSecret = string(decrypt)
 	return gitHub, nil
 }
 func (gateway GitHub) Scope() string {

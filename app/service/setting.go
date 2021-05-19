@@ -26,7 +26,7 @@ func (service Setting) GetPublicSettings() (map[string]interface{}, error) {
 	for _, value := range data {
 		returnData[value.Key] = value.Value
 	}
-	returnData["connects"] = config.Config.Web["connects"]
+	returnData["connects"] = config.Config.Web.Connects
 	return returnData, nil
 }
 

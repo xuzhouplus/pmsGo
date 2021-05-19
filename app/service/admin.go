@@ -5,7 +5,7 @@ import (
 	"log"
 	"pmsGo/app/model"
 	"pmsGo/lib/database"
-	"pmsGo/lib/security"
+	"pmsGo/lib/security/rsa"
 )
 
 type Admin struct {
@@ -72,7 +72,7 @@ func (service Admin) Update(postData map[string]interface{}) (*model.Admin, erro
 		return nil, errors.New("账号不存在")
 	}
 	admin.Avatar = postData["avatar"].(string)
-	password, err := security.RsaDecryptByPrivateKey(postData["password"].(string))
+	password, err := rsa.DecryptByPrivateKey(postData["password"].(string))
 	if err != nil {
 		log.Printf("password:%e \n", err)
 		return nil, err

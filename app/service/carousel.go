@@ -5,7 +5,7 @@ import (
 	"pmsGo/app/model"
 	"pmsGo/lib/database"
 	"pmsGo/lib/helper/image"
-	"pmsGo/lib/security"
+	"pmsGo/lib/security/random"
 	"strconv"
 )
 
@@ -88,7 +88,7 @@ func (service Carousel) Create(fileId int, title string, description string, lin
 	carousel.Height = carouselFile.Height
 	carousel.Width = carouselFile.Width
 	carousel.FileId = fileId
-	carousel.Uuid = security.Uuid(false)
+	carousel.Uuid = random.Uuid(false)
 	result = connect.Create(&carousel)
 	if result.Error != nil {
 		return nil, result.Error

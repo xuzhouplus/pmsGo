@@ -8,7 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"pmsGo/lib/security"
+	"pmsGo/lib/security/random"
 	"regexp"
 	"time"
 )
@@ -46,7 +46,7 @@ func Upload(ctx *gin.Context, fieldName string, subDir string) (*Instance, error
 	}
 	now := time.Now()
 	date := now.Format("2006-01-02")
-	guid := security.Uuid(false)
+	guid := random.Uuid(false)
 	helper.File = subDir + "/" + date + "/" + guid + helper.Extension
 	filePath := Settings.path + helper.File
 	filePath = filepath.ToSlash(filePath)
@@ -86,7 +86,7 @@ func Base64Upload(ctx *gin.Context, fieldName string, subDir string) (*Instance,
 	//拼接图片保存路径
 	now := time.Now()
 	date := now.Format("2006-01-02")
-	guid := security.Uuid(false)
+	guid := random.Uuid(false)
 	helper.File = subDir + "/" + date + "/" + guid + helper.Extension
 	filePath := Settings.path + helper.File
 	filePath = filepath.ToSlash(filePath)

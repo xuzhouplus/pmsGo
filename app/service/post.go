@@ -6,7 +6,7 @@ import (
 	"math"
 	"pmsGo/app/model"
 	"pmsGo/lib/database"
-	"pmsGo/lib/security"
+	"pmsGo/lib/security/random"
 )
 
 type Post struct {
@@ -103,7 +103,7 @@ func (service Post) Save(postData map[string]interface{}) (*model.Post, error) {
 	newRecord := false
 	if data.Uuid == "" {
 		newRecord = true
-		data.Uuid = security.Uuid(false)
+		data.Uuid = random.Uuid(false)
 	}
 	connect := database.Query(&model.Post{})
 	var result *gorm.DB

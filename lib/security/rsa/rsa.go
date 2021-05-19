@@ -1,17 +1,15 @@
-package security
+package rsa
 
 import (
-	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/pem"
-	"github.com/go-basic/uuid"
 	"io/ioutil"
 	"os"
-	"strings"
+	"path/filepath"
+	"pmsGo/lib/config"
 )
 
 func readRsaPubKey(filename string) (*rsa.PublicKey, error) {
@@ -50,12 +48,12 @@ func readRsaPriKey(filename string) (*rsa.PrivateKey, error) {
 	return pri, nil
 }
 
-func RsaDecryptByPrivateKey(cipherText string) (string, error) {
+func DecryptByPrivateKey(cipherText string) (string, error) {
 	pwd, error := os.Getwd()
 	if error != nil {
 		return "", error
 	}
-	priKey, error := readRsaPriKey(pwd + "\\config\\rsa_1024_priv.pem")
+	priKey, error := readRsaPriKey(pwd + string(filepath.Separator) + config.Config.Web.Security["primaryKey"])
 	if error != nil {
 		return "", error
 	}
@@ -66,23 +64,9 @@ func RsaDecryptByPrivateKey(cipherText string) (string, error) {
 	}
 
 	//解密
-	info, err := rsa.DecryptPKCS1v15(rand.Reader, priKey, []byte(decrypted))
+	info, err := rsa.DecryptPKCS1v15(rand.Reader, priKey, decrypted)
 	if err != nil {
 		return "", err
 	}
 	return string(info), nil
-}
-
-func MD5(text string, salt string) string {
-	ctx := md5.New()
-	ctx.Write([]byte(salt + text))
-	return hex.EncodeToString(ctx.Sum(nil))
-}
-
-func Uuid(separator bool) string {
-	uuid:= uuid.New()
-	if separator{
-		return uuid
-	}
-	return strings.ReplaceAll(uuid, "-", "")
 }

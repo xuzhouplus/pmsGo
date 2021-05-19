@@ -4,7 +4,9 @@ import (
 	"errors"
 	"log"
 	"pmsGo/lib/database"
-	"pmsGo/lib/security"
+	"pmsGo/lib/security/md5"
+	"pmsGo/lib/security/random"
+	"pmsGo/lib/security/rsa"
 	"time"
 )
 
@@ -21,19 +23,19 @@ type Admin struct {
 	Account   string    `gorm:"uniqueIndex" json:"account"`
 	Avatar    string    `json:"avatar"`
 	Password  string    `json:"_"`
-	Status    int    `json:"status"`
+	Status    int       `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Salt      string    `json:"_"`
 }
 
 func (model Admin) ValidatePassword(inputPassword string) (bool, error) {
-	password, err := security.RsaDecryptByPrivateKey(inputPassword)
+	password, err := rsa.DecryptByPrivateKey(inputPassword)
 	if err != nil {
 		log.Printf("password:%e \n", err)
 		return false, err
 	}
-	password = security.MD5(password, model.Salt)
+	password = md5.Md5(password, model.Salt)
 	if password == model.Password {
 		return true, nil
 	}
@@ -41,8 +43,8 @@ func (model Admin) ValidatePassword(inputPassword string) (bool, error) {
 }
 
 func (model *Admin) SetPassword(inputPassword string) {
-	salt := security.Uuid(true)
-	password := security.MD5(inputPassword, salt)
+	salt := random.Uuid(true)
+	password := md5.Md5(inputPassword, salt)
 	model.Salt = salt
 	model.Password = password
 }

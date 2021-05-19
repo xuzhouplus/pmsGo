@@ -11,10 +11,10 @@ import (
 	"strings"
 )
 
-var settings map[interface{}]interface{}
+var settings map[string]config.Auth
 
 func init() {
-	settings = config.Config.Web["auth"].(map[interface{}]interface{})
+	settings = config.Config.Web.Auth
 	log.Printf("auth: %v \n", settings)
 }
 
@@ -38,22 +38,20 @@ func getRequest(ctx *gin.Context) (string, string) {
 }
 func getAuthType(controller string, action string) interface{} {
 	authSet := settings[controller]
-	if authSet == nil {
-		return nil
-	}
-	authSetMap := authSet.(map[interface{}]interface{})
-	except := authSetMap["except"]
+	//if authSet == nil {
+	//	return nil
+	//}
+	authSetMap := authSet
+	except := authSetMap.Except
 	if except != nil {
-		exceptSet := except.([]interface{})
-		_, result := helper.IsInSlice(exceptSet, action)
+		_, result := helper.IsInSlice(except, action)
 		if result {
 			return "except"
 		}
 	}
-	optional := authSetMap["optional"]
+	optional := authSetMap.Optional
 	if optional != nil {
-		optionalSet := optional.([]interface{})
-		_, result := helper.IsInSlice(optionalSet, action)
+		_, result := helper.IsInSlice(optional, action)
 		if result {
 			return "optional"
 		}

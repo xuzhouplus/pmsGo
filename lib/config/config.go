@@ -11,8 +11,8 @@ type config struct {
 	Site     site
 	Database database
 	Redis    redis
-	Session session
-	Web      map[string]interface{}
+	Session  session
+	Web      Web
 }
 
 var Config = &config{}
@@ -33,4 +33,5 @@ func init() {
 	if error != nil {
 		fmt.Errorf("Can`t analyse config image:%err\n", error)
 	}
+
 }
