@@ -4,15 +4,14 @@ import (
 	"encoding/json"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
 	"pmsGo/lib/helper/image"
 	"pmsGo/lib/oauth"
-	"pmsGo/lib/oauth/gateway"
 	"pmsGo/lib/security/random"
+	"pmsGo/middleware/auth"
 )
 
 type admin struct {
@@ -30,7 +29,7 @@ func (ctl admin) Login(ctx *gin.Context) {
 	} else {
 		session := sessions.Default(ctx)
 		data, _ := json.Marshal(loginAdmin)
-		session.Set("login_admin", data)
+		session.Set(auth.SessionLoginAdminKey, data)
 		session.Save()
 		returnAttr := make(map[string]string)
 		returnAttr["uuid"] = loginAdmin.Uuid
@@ -44,17 +43,12 @@ func (ctl admin) Login(ctx *gin.Context) {
 func (ctl admin) Auth(ctx *gin.Context) {
 	returnAttr := make(map[string]interface{})
 	loginAdmin := make(map[string]interface{})
-	session := sessions.Default(ctx)
-	loginData := session.Get("login_admin")
+	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
 	if loginData == nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, returnAttr, "获取失败"))
 		return
 	}
-	err := json.Unmarshal(loginData.([]byte), &loginAdmin)
-	if err != nil {
-		log.Println(err)
-		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, returnAttr, "获取失败"))
-	}
+	loginAdmin = loginData.(map[string]interface{})
 	if loginAdmin != nil {
 		returnAttr["uuid"] = loginAdmin["uuid"]
 		returnAttr["type"] = loginAdmin["type"]
@@ -75,7 +69,7 @@ func (ctl admin) Logout(ctx *gin.Context) {
 
 func (ctl admin) Profile(ctx *gin.Context) {
 	loginAdmin := make(map[string]interface{})
-	loginData, _ := ctx.Get("loginAdmin")
+	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
 	if loginData == nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
@@ -102,6 +96,9 @@ func (ctl admin) Profile(ctx *gin.Context) {
 				return
 			}
 			requestData["avatar"] = string(instance.Url())
+			if account.Avatar != "" {
+				image.Remove(string(image.UrlToPath(image.Url(account.Avatar))))
+			}
 		}
 		admin, err := service.AdminService.Update(requestData)
 		if err != nil {
@@ -134,7 +131,7 @@ func (ctl admin) Connects(ctx *gin.Context) {
 }
 
 func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
-	gatewayType := gateway.GitHubGatewayType
+	gatewayType := ctx.Query("type")
 	oauthGateway, err := oauth.NewOauth(gatewayType)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
@@ -142,7 +139,7 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	}
 	redirect := config.Config.Web.Host + "/profile/authorize/" + gatewayType
 	state := random.Uuid(false)
-	authorizeUrl := oauthGateway.AuthorizeUrl("", redirect, state)
+	authorizeUrl := oauthGateway.AuthorizeUrl(ctx.Query("scope"), redirect, state)
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, authorizeUrl, "获取成功"))
 }
 

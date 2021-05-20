@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -48,7 +49,20 @@ func readRsaPriKey(filename string) (*rsa.PrivateKey, error) {
 	return pri, nil
 }
 
-func DecryptByPrivateKey(cipherText string) (string, error) {
+func decodeCipher(cipherText string, primaryKey *rsa.PrivateKey) ([]byte, error) {
+	decrypted, error := base64.StdEncoding.DecodeString(cipherText)
+	if error != nil {
+		return nil, error
+	}
+	//解密
+	info, err := rsa.DecryptPKCS1v15(rand.Reader, primaryKey, decrypted)
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+func DecryptByPrivateKey(cipherText interface{}) (string, error) {
 	pwd, error := os.Getwd()
 	if error != nil {
 		return "", error
@@ -57,16 +71,25 @@ func DecryptByPrivateKey(cipherText string) (string, error) {
 	if error != nil {
 		return "", error
 	}
-
-	decrypted, error := base64.StdEncoding.DecodeString(cipherText)
-	if error != nil {
-		return "", error
+	switch cipherText.(type) {
+	case []string:
+		plainText := make([]byte, 0)
+		cipherTextSections := cipherText.([]string)
+		for _, section := range cipherTextSections {
+			cipher, err := decodeCipher(section, priKey)
+			if err != nil {
+				return "", err
+			}
+			plainText = append(plainText, cipher...)
+		}
+		return string(plainText), nil
+	case string:
+		cipher, err := decodeCipher(cipherText.(string), priKey)
+		if err != nil {
+			return "", err
+		}
+		return string(cipher), nil
+	default:
+		return "", errors.New("数据只能是[]string或string")
 	}
-
-	//解密
-	info, err := rsa.DecryptPKCS1v15(rand.Reader, priKey, decrypted)
-	if err != nil {
-		return "", err
-	}
-	return string(info), nil
 }

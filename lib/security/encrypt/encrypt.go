@@ -101,7 +101,7 @@ func Decrypt(encrypted []byte, salt []byte) ([]byte, error) {
 	authKey := hashHkdf(sha256.New, key, nil, []byte("AuthorizationKey"), 16)
 	data := validateData(sha256.New, encrypted[16:], authKey)
 	if data == nil {
-		return nil, errors.New("n")
+		return nil, errors.New("解析错误")
 	}
 	decrypt, err := opensslDecrypt(data, key)
 	if err != nil {

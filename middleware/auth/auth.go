@@ -13,6 +13,9 @@ import (
 
 var settings map[string]config.Auth
 
+const SessionLoginAdminKey = "login_admin"
+const ContextLoginAdminKey = "loginAdmin"
+
 func init() {
 	settings = config.Config.Web.Auth
 	log.Printf("auth: %v \n", settings)
@@ -65,7 +68,7 @@ func Register() gin.HandlerFunc {
 		log.Printf("controller: %v ,action: %v ,auth: %v\n", controller, action, authType)
 		if authType != "except" {
 			session := sessions.Default(ctx)
-			sessionAdmin := session.Get("login_admin")
+			sessionAdmin := session.Get(SessionLoginAdminKey)
 			if sessionAdmin == nil && authType == nil {
 				ctx.JSON(http.StatusUnauthorized, nil)
 				ctx.Abort()
@@ -74,10 +77,10 @@ func Register() gin.HandlerFunc {
 			if sessionAdmin != nil {
 				loginAdmin := make(map[string]interface{})
 				err := json.Unmarshal(sessionAdmin.([]byte), &loginAdmin)
-				if err!=nil {
+				if err != nil {
 					log.Printf("解析session数据失败,%e", err)
-				}else {
-					ctx.Set("loginAdmin", loginAdmin)
+				} else {
+					ctx.Set(ContextLoginAdminKey, loginAdmin)
 				}
 			}
 		}

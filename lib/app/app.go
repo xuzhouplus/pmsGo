@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"pmsGo/lib/config"
 	"pmsGo/lib/database"
@@ -15,7 +14,6 @@ func Run() {
 	if config.Config.Site.Debug {
 		mode = gin.DebugMode
 	}
-	fmt.Println(config.Config)
 	gin.SetMode(mode)
 	database.Init()
 	server := gin.Default()

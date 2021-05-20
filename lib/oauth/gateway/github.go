@@ -8,6 +8,7 @@ import (
 	"pmsGo/app/model"
 	"pmsGo/app/service"
 	"pmsGo/lib/config"
+	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
 )
 
@@ -59,7 +60,7 @@ func NewGitHub() (*GitHub, error) {
 	if secret == "" {
 		return nil, errors.New("缺少配置:" + model.SettingKeyGithubAppSecret)
 	}
-	decrypt, err := encrypt.Decrypt([]byte(secret), []byte(config.Config.Web.Security["salt"]))
+	decrypt, err := encrypt.Decrypt(base64.Decode(secret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {
 		return nil, err
 	}
