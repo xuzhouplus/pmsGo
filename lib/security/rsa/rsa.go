@@ -93,3 +93,5 @@ func DecryptByPrivateKey(cipherText interface{}) (string, error) {
 		return "", errors.New("数据只能是[]string或string")
 	}
 }
+
+

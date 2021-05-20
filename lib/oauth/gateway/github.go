@@ -2,8 +2,8 @@ package gateway
 
 import (
 	"errors"
-	"fmt"
 	"github.com/idoubi/goz"
+	"log"
 	"net/url"
 	"pmsGo/app/model"
 	"pmsGo/app/service"
@@ -28,7 +28,7 @@ type GitHub struct {
 	GithubAppSecret       string
 }
 
-type AccessTokenRequest struct {
+type GitHubAccessTokenRequest struct {
 	ClientId     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 	Code         string `json:"code"`
@@ -36,7 +36,7 @@ type AccessTokenRequest struct {
 	State        string `json:"state"`
 }
 
-type AccessTokenResponse struct {
+type GitHubAccessTokenResponse struct {
 	AccessToken string `json:"access_token"`
 	Scope       string `json:"scope"`
 	TokenType   string `json:"token_type"`
@@ -89,7 +89,7 @@ func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) 
 }
 
 func (gateway GitHub) AccessToken(code string, redirect string, state string) (string, error) {
-	requestData := &AccessTokenRequest{gateway.GithubAppId, gateway.GithubAppSecret, code, redirect, state}
+	requestData := &GitHubAccessTokenRequest{gateway.GithubAppId, gateway.GithubAppSecret, code, redirect, state}
 	client := goz.NewClient()
 	response, err := client.Post(GitHubAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
@@ -126,6 +126,6 @@ func (gateway GitHub) User(accessToken string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(body)
+	log.Println(body)
 	return nil, nil
 }

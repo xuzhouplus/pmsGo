@@ -26,6 +26,8 @@ func NewOauth(gatewayType string) (*Oauth, error) {
 	switch gatewayType {
 	case gateway.GitHubGatewayType:
 		gatewayInstance, err = gateway.NewGitHub()
+	case gateway.BaiduGatewayType:
+		gatewayInstance, err = gateway.NewBaidu()
 	default:
 		return nil, fmt.Errorf("不支持的类型：%v", gatewayType)
 	}
