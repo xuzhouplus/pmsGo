@@ -7,6 +7,7 @@ import (
 	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
+	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
 	"pmsGo/lib/security/rsa"
 )
@@ -64,6 +65,13 @@ func (setting setting) Carousel(ctx *gin.Context) {
 func (setting setting) Alipay(ctx *gin.Context) {
 	if ctx.Request.Method == "GET" {
 		result := service.SettingService.GetSettings(model.AlipaySettingModel.Keys())
+		if result[model.SettingKeyAlipayAppPrimaryKey] !="" {
+			decrypt, err := encrypt.Decrypt(base64.Decode(result[model.SettingKeyAlipayAppPrimaryKey]), []byte(config.Config.Web.Security["salt"]))
+			if err != nil {
+				return
+			}
+			result[model.SettingKeyAlipayAppPrimaryKey] = string(decrypt)
+		}
 		ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, result, "获取成功"))
 	} else {
 		var keyPairs = make(map[string]interface{})
@@ -79,7 +87,7 @@ func (setting setting) Alipay(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyAlipayAppPrimaryKey] = string(primaryKeyByte)
+			keyPairs[model.SettingKeyAlipayAppPrimaryKey] = base64.Encode(primaryKeyByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {
@@ -108,7 +116,7 @@ func (setting setting) Baidu(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyBaiduSecretKey] = string(primaryKeyByte)
+			keyPairs[model.SettingKeyBaiduSecretKey] = base64.Encode(primaryKeyByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {
@@ -137,7 +145,7 @@ func (setting setting) Facebook(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyFacebookAppSecret] = string(appSecretByte)
+			keyPairs[model.SettingKeyFacebookAppSecret] = base64.Encode(appSecretByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {
@@ -165,7 +173,7 @@ func (setting setting) Github(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyGithubAppSecret] = string(appSecretByte)
+			keyPairs[model.SettingKeyGithubAppSecret] = base64.Encode(appSecretByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {
@@ -193,7 +201,7 @@ func (setting setting) Google(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyGoogleAppSecret] = string(appSecretByte)
+			keyPairs[model.SettingKeyGoogleAppSecret] = base64.Encode(appSecretByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {
@@ -221,7 +229,7 @@ func (setting setting) Line(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyLineAppSecret] = string(appSecretByte)
+			keyPairs[model.SettingKeyLineAppSecret] = base64.Encode(appSecretByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {
@@ -249,7 +257,7 @@ func (setting setting) Qq(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyQqAppSecret] = string(appSecretByte)
+			keyPairs[model.SettingKeyQqAppSecret] = base64.Encode(appSecretByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {
@@ -277,7 +285,7 @@ func (setting setting) Twitter(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyTwitterAppSecret] = string(appSecretByte)
+			keyPairs[model.SettingKeyTwitterAppSecret] = base64.Encode(appSecretByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {
@@ -305,7 +313,7 @@ func (setting setting) Wechat(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyWechatAppSecret] = string(appSecretByte)
+			keyPairs[model.SettingKeyWechatAppSecret] = base64.Encode(appSecretByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {
@@ -333,7 +341,7 @@ func (setting setting) Weibo(ctx *gin.Context) {
 				ctx.JSON(http.StatusOK, setting.Response(controller.CodeFail, nil, err.Error()))
 				return
 			}
-			keyPairs[model.SettingKeyWeiboAppSecret] = string(appSecretByte)
+			keyPairs[model.SettingKeyWeiboAppSecret] = base64.Encode(appSecretByte)
 		}
 		err := service.SettingService.Save(keyPairs)
 		if err != nil {

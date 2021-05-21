@@ -8,6 +8,7 @@ import (
 	"pmsGo/app/model"
 	"pmsGo/app/service"
 	"pmsGo/lib/config"
+	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
 )
 
@@ -52,7 +53,7 @@ func NewBaidu() (*Baidu, error) {
 	if secretKey == "" {
 		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyBaiduSecretKey)
 	}
-	decrypt, err := encrypt.Decrypt([]byte(secretKey), []byte(config.Config.Web.Security["salt"]))
+	decrypt, err := encrypt.Decrypt(base64.Decode(secretKey), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {
 		return nil, err
 	}

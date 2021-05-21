@@ -24,6 +24,8 @@ func NewOauth(gatewayType string) (*Oauth, error) {
 	var gatewayInstance gateway.Gateway
 	var err error
 	switch gatewayType {
+	case gateway.AlipayGatewayType:
+		gatewayInstance, err = gateway.NewAlipay()
 	case gateway.GitHubGatewayType:
 		gatewayInstance, err = gateway.NewGitHub()
 	case gateway.BaiduGatewayType:

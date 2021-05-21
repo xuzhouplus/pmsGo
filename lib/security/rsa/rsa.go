@@ -72,6 +72,17 @@ func DecryptByPrivateKey(cipherText interface{}) (string, error) {
 		return "", error
 	}
 	switch cipherText.(type) {
+	case []interface{}:
+		plainText := make([]byte, 0)
+		cipherTextSections := cipherText.([]interface{})
+		for _, section := range cipherTextSections {
+			cipher, err := decodeCipher(section.(string), priKey)
+			if err != nil {
+				return "", err
+			}
+			plainText = append(plainText, cipher...)
+		}
+		return string(plainText), nil
 	case []string:
 		plainText := make([]byte, 0)
 		cipherTextSections := cipherText.([]string)
@@ -93,5 +104,3 @@ func DecryptByPrivateKey(cipherText interface{}) (string, error) {
 		return "", errors.New("数据只能是[]string或string")
 	}
 }
-
-

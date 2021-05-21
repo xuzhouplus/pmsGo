@@ -140,6 +140,17 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	redirect := config.Config.Web.Host + "/profile/authorize/" + gatewayType
 	state := random.Uuid(false)
 	authorizeUrl := oauthGateway.AuthorizeUrl(ctx.Query("scope"), redirect, state)
+	session := sessions.Default(ctx)
+	session.Set("authorize"+state, map[string]interface{}{
+		"do":       ctx.Query("do"),
+		"gateway":  gatewayType,
+		"redirect": redirect,
+	})
+	err = session.Save()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
+		return
+	}
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, authorizeUrl, "获取成功"))
 }
 
@@ -147,6 +158,12 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 	code := ctx.Query("code")
 	state := ctx.Query("state")
 	gatewayType := ctx.Query("gateway")
+	session := sessions.Default(ctx)
+	sessionData := session.Get("authorize" + state)
+	if sessionData == nil {
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
+		return
+	}
 	oauthGateway, err := oauth.NewOauth(gatewayType)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
@@ -163,5 +180,6 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
+
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, user, "获取成功"))
 }

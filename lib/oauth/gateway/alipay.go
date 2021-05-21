@@ -2,39 +2,59 @@ package gateway
 
 import (
 	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/x509"
-	"encoding/pem"
-	"errors"
 	"fmt"
 	"github.com/idoubi/goz"
-	"log"
 	"net/url"
 	"pmsGo/app/model"
 	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
+	"pmsGo/lib/security/rsa"
 	"sort"
 	"strings"
 	"time"
 )
 
+const AlipayGatewayType = "alipay"
 const (
-	AlipayAuthorizeUrl   = "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm"
-	AlipayAccessTokenUrl = "https://openapi.alipay.com/gateway.do"
+	AlipayAuthorizeUrl = "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm"
+	AlipayGatewayUrl   = "https://openapi.alipay.com/gateway.do"
 )
 
 const AlipayUserScope = "auth_user"
 const AlipayGrantType = "authorization_code"
 
+type AlipayAccessTokenRequest struct {
+	AppId     string `json:"app_id"`
+	Method    string `json:"method"`
+	Charset   string `json:"charset"`
+	SignType  string `json:"sign_type"`
+	Timestamp string `json:"timestamp"`
+	Version   string `json:"version"`
+	GrantType string `json:"grant_type"`
+	Code      string `json:"code"`
+	Format    string `json:"format"`
+	Sign      string `json:"sign"`
+}
+
+type AlipayAccessUserRequest struct {
+	AppId     string `json:"app_id"`
+	Method    string `json:"method"`
+	Charset   string `json:"charset"`
+	SignType  string `json:"sign_type"`
+	Timestamp string `json:"timestamp"`
+	Version   string `json:"version"`
+	AuthToken string `json:"auth_token"`
+	Format    string `json:"format"`
+	Sign      string `json:"sign"`
+}
+
 // Alipay @link https://opendocs.alipay.com/open/263/105808/**
 type Alipay struct {
 	AlipayAppId         string
-	AlipayAppPrimaryKey string
-	AlipayPublicKey     string
+	AlipayAppPrimaryKey []byte
+	AlipayPublicKey     []byte
 }
 
 func NewAlipay() (*Alipay, error) {
@@ -43,19 +63,20 @@ func NewAlipay() (*Alipay, error) {
 	if alipay.AlipayAppId == "" {
 		return nil, fmt.Errorf("缺少参数：%v", model.SettingKeyAlipayAppId)
 	}
-	alipay.AlipayPublicKey = service.SettingService.GetSetting(model.SettingKeyAlipayPublicKay)
-	if alipay.AlipayPublicKey == "" {
+	publicKey := service.SettingService.GetSetting(model.SettingKeyAlipayPublicKay)
+	if publicKey == "" {
 		return nil, fmt.Errorf("缺少参数：%v", model.SettingKeyAlipayPublicKay)
 	}
+	alipay.AlipayPublicKey = rsa.FormatPublicKey(publicKey)
 	appPrimaryKey := service.SettingService.GetSetting(model.SettingKeyAlipayAppPrimaryKey)
 	if appPrimaryKey == "" {
 		return nil, fmt.Errorf("缺少参数：%v", model.SettingKeyAlipayAppPrimaryKey)
 	}
-	decrypt, err := encrypt.Decrypt([]byte(appPrimaryKey), []byte(config.Config.Web.Security["salt"]))
+	decrypt, err := encrypt.Decrypt(base64.Decode(appPrimaryKey), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {
 		return nil, err
 	}
-	alipay.AlipayAppPrimaryKey = string(decrypt)
+	alipay.AlipayAppPrimaryKey = rsa.FormatPKCS8PrivateKey(string(decrypt))
 	return alipay, nil
 }
 func (gateway Alipay) Scope() string {
@@ -66,33 +87,20 @@ func (gateway Alipay) GrantType() string {
 	return AlipayGrantType
 }
 
-func (gateway Alipay) signature(params map[string]string) string {
+func (gateway Alipay) signature(params map[string]interface{}) string {
 	var pList = make([]string, 0, 0)
 
 	for field, val := range params {
-		pList = append(pList, field+"="+val)
+		if val != nil {
+			pList = append(pList, field+"="+val.(string))
+		}
 	}
 	sort.Strings(pList)
 	var src = strings.Join(pList, "&")
-	h := sha256.New()
-	h.Write([]byte(src))
-	hashed := h.Sum(nil)
-	block, _ := pem.Decode([]byte(gateway.AlipayAppPrimaryKey))
-	if block == nil {
-		panic(errors.New("private key error"))
-	}
-	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	signature, err := rsa.RSASignWithPKCS8([]byte(src), gateway.AlipayAppPrimaryKey, crypto.SHA256)
 	if err != nil {
-		fmt.Println("ParsePKCS8PrivateKey err", err)
-		panic(err)
+		panic(err.Error())
 	}
-
-	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashed)
-	if err != nil {
-		fmt.Printf("Error from signing: %s\n", err)
-		panic(err)
-	}
-
 	return base64.Encode(signature)
 }
 
@@ -108,11 +116,11 @@ func (gateway Alipay) AuthorizeUrl(scope string, redirect string, state string) 
 	query.Add("scope", scope)
 	query.Add("state", state)
 	queryString := query.Encode()
-	return BaiduAuthorizeUrl + "?" + queryString
+	return AlipayAuthorizeUrl + "?" + queryString
 }
 
 func (gateway Alipay) AccessToken(code string, redirect string, state string) (string, error) {
-	queryData := map[string]string{
+	queryData := map[string]interface{}{
 		"app_id":     gateway.AlipayAppId,
 		"method":     "alipay.system.oauth.token",
 		"charset":    "utf-8",
@@ -121,16 +129,16 @@ func (gateway Alipay) AccessToken(code string, redirect string, state string) (s
 		"version":    "1.0",
 		"grant_type": gateway.GrantType(),
 		"code":       code,
+		"format":     "JSON",
 	}
 	queryData["sign"] = gateway.signature(queryData)
-
 	client := goz.NewClient()
-	response, err := client.Post(AlipayAccessTokenUrl, goz.Options{
+	response, err := client.Post(AlipayGatewayUrl, goz.Options{
+		Debug: true,
 		Headers: map[string]interface{}{
-			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		JSON: queryData,
+		FormParams: queryData,
 	})
 	if err != nil {
 		return "", err
@@ -147,7 +155,7 @@ func (gateway Alipay) AccessToken(code string, redirect string, state string) (s
 }
 
 func (gateway Alipay) User(accessToken string) (map[string]string, error) {
-	queryData := map[string]string{
+	queryData := map[string]interface{}{
 		"app_id":     gateway.AlipayAppId,
 		"method":     "alipay.user.info.share",
 		"charset":    "utf-8",
@@ -155,16 +163,16 @@ func (gateway Alipay) User(accessToken string) (map[string]string, error) {
 		"timestamp":  time.Now().Format("2006-01-02 15:04:05"),
 		"version":    "1.0",
 		"auth_token": accessToken,
+		"format":     "JSON",
 	}
 	queryData["sign"] = gateway.signature(queryData)
 
 	client := goz.NewClient()
-	response, err := client.Post(AlipayAccessTokenUrl, goz.Options{
+	response, err := client.Post(AlipayGatewayUrl, goz.Options{
 		Headers: map[string]interface{}{
-			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		JSON: queryData,
+		FormParams: queryData,
 	})
 	if err != nil {
 		return nil, err
@@ -174,7 +182,6 @@ func (gateway Alipay) User(accessToken string) (map[string]string, error) {
 		return nil, err
 	}
 	responseData := body.Get("alipay_user_info_share_response")
-	log.Println(responseData)
 	if responseData.Exists() {
 		sex := "2"
 		gender := responseData.Get("gender").String()

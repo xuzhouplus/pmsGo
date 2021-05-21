@@ -30,7 +30,7 @@ web:
     primaryKey: "config\\rsa_1024_priv.pem"
     salt: "xcvmnbiufs"
   host: "http://web.pms.test"
-  connects: [ github ]
+  connects: [ alipay,github ]
   auth:
     admin:
       except: [ ]

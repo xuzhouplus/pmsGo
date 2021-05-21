@@ -62,7 +62,14 @@ func PKCS7Padding(ciphertext []byte, blocksize int) []byte {
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(ciphertext, padtext...)
 }
-
+func PKCS7UnPadding(src []byte) []byte {
+	length := len(src)
+	unpadding := int(src[length-1])
+	if length-unpadding < 0 {
+		return []byte("")
+	}
+	return src[:(length - unpadding)]
+}
 func opensslEncrypt(data []byte, key []byte, iv []byte) ([]byte, error) {
 	block, _ := aes.NewCipher(key)
 	blockSize := block.BlockSize()                 // 获取秘钥块的长度
@@ -107,5 +114,6 @@ func Decrypt(encrypted []byte, salt []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	decrypt = PKCS7UnPadding(decrypt)
 	return decrypt, nil
 }
