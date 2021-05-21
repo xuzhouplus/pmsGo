@@ -1,15 +1,16 @@
 package controller
 
 import (
-	"encoding/json"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
 	"pmsGo/lib/helper/image"
 	"pmsGo/lib/oauth"
+	"pmsGo/lib/security/json"
 	"pmsGo/lib/security/random"
 	"pmsGo/middleware/auth"
 )
@@ -28,7 +29,7 @@ func (ctl admin) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeFail, nil, err.Error()))
 	} else {
 		session := sessions.Default(ctx)
-		data, _ := json.Marshal(loginAdmin)
+		data, _ := json.Encode(loginAdmin)
 		session.Set(auth.SessionLoginAdminKey, data)
 		session.Save()
 		returnAttr := make(map[string]string)
@@ -111,17 +112,12 @@ func (ctl admin) Profile(ctx *gin.Context) {
 
 func (ctl admin) Connects(ctx *gin.Context) {
 	loginAdmin := make(map[string]interface{})
-	session := sessions.Default(ctx)
-	loginData := session.Get("login_admin")
+	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
 	if loginData == nil {
-		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
+		ctx.JSON(http.StatusUnauthorized, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
 	}
-	err := json.Unmarshal(loginData.([]byte), &loginAdmin)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
-		return
-	}
+	loginAdmin = loginData.(map[string]interface{})
 	connects, err := service.AdminService.GetBoundConnects(loginAdmin["account"].(string))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
@@ -141,13 +137,28 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	state := random.Uuid(false)
 	authorizeUrl := oauthGateway.AuthorizeUrl(ctx.Query("scope"), redirect, state)
 	session := sessions.Default(ctx)
-	session.Set("authorize"+state, map[string]interface{}{
-		"do":       ctx.Query("do"),
-		"gateway":  gatewayType,
-		"redirect": redirect,
-	})
+	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
+	adminId := 0
+	if loginData != nil {
+		loginAdmin := loginData.(map[string]interface{})
+		adminId = int(loginAdmin["id"].(float64))
+	}
+	authData := make(map[string]interface{})
+	authData["action"] = ctx.Query("action")
+	authData["gateway"] = gatewayType
+	authData["redirect"] = redirect
+	authData["admin"] = adminId
+	authData["state"] = state
+	encode, err := json.Encode(authData)
+	if err != nil {
+		log.Println(err)
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
+		return
+	}
+	session.Set("authorize", encode)
 	err = session.Save()
 	if err != nil {
+		log.Println(err)
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
@@ -156,21 +167,47 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 
 func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 	code := ctx.Query("code")
+	if code == "" {
+		//兼容支付宝
+		code = ctx.Query("auth_code")
+	}
 	state := ctx.Query("state")
-	gatewayType := ctx.Query("gateway")
 	session := sessions.Default(ctx)
-	sessionData := session.Get("authorize" + state)
+	sessionData := session.Get("authorize")
 	if sessionData == nil {
+		log.Println("授权数据为空")
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
 		return
 	}
-	oauthGateway, err := oauth.NewOauth(gatewayType)
+	authorizeData := make(map[string]interface{})
+	err := json.Decode(sessionData.(string), &authorizeData)
+	if err != nil {
+		log.Println("授权数据解析失败")
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
+		return
+	}
+	if authorizeData["state"] == nil {
+		log.Println("授权数据state为空")
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
+		return
+	}
+	sessionState := authorizeData["state"].(string)
+	if sessionState != state {
+		log.Println("授权数据state无效")
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
+		return
+	}
+	if authorizeData["gateway"] == nil {
+		log.Println("授权数据gateway无效")
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
+		return
+	}
+	oauthGateway, err := oauth.NewOauth(authorizeData["gateway"].(string))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
-	redirect := config.Config.Web.Host + "/profile/authorize/" + gatewayType
-	token, err := oauthGateway.AccessToken(code, redirect, state)
+	token, err := oauthGateway.AccessToken(code, authorizeData["redirect"].(string), state)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
@@ -180,6 +217,38 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
-
-	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, user, "获取成功"))
+	switch authorizeData["action"].(string) {
+	case "login":
+		admin, err := service.AdminService.Auth(user)
+		if err != nil {
+			log.Println(err)
+			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "登录失败"))
+			return
+		}
+		if admin == nil {
+			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "登录失败"))
+			return
+		}
+		loginAdmin := make(map[string]interface{})
+		session := sessions.Default(ctx)
+		data, _ := json.Encode(loginAdmin)
+		session.Set(auth.SessionLoginAdminKey, data)
+		session.Save()
+		returnAttr := make(map[string]string)
+		returnAttr["uuid"] = admin.Uuid
+		returnAttr["type"] = admin.Type
+		returnAttr["avatar"] = admin.Avatar
+		returnAttr["account"] = admin.Account
+		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, admin, "登录成功"))
+	case "bind":
+		bind, err := service.AdminService.Bind(int(authorizeData["admin"].(float64)), user)
+		if err != nil {
+			log.Println(err)
+			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "绑定失败"))
+			return
+		}
+		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, bind, "获取成功"))
+	default:
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
+	}
 }

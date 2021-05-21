@@ -29,7 +29,9 @@ func Router(engine *gin.Engine) {
 		admin.GET("/connects", auth.Register(), controller.Admin.Connects)
 		//获取第三方互联授权地址
 		admin.GET("/authorize", auth.Register(), controller.Admin.AuthorizeUrl)
+		admin.GET("/authorize-url", auth.Register(), controller.Admin.AuthorizeUrl)
 		//获取第三方互联授权账号
+		admin.GET("/callback", auth.Register(), controller.Admin.AuthorizeUser)
 		admin.GET("/authorize-user", auth.Register(), controller.Admin.AuthorizeUser)
 	}
 

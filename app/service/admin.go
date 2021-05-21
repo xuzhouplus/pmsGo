@@ -2,9 +2,11 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"pmsGo/app/model"
 	"pmsGo/lib/database"
+	"pmsGo/lib/oauth/user"
 	"pmsGo/lib/security/rsa"
 )
 
@@ -32,6 +34,21 @@ func (service Admin) FindOneByUuid(uuid string, status int) (*model.Admin, error
 	admin := &model.Admin{}
 	connect := database.Query(&model.Admin{})
 	connect.Where("uuid = ?", uuid)
+	if status != 0 {
+		connect.Where("status = ?", status)
+	}
+	connect.Limit(1)
+	result := connect.Take(&admin)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return admin, nil
+}
+
+func (service Admin) FindOneById(id int, status int) (*model.Admin, error) {
+	admin := &model.Admin{}
+	connect := database.Query(&model.Admin{})
+	connect.Where("id = ?", id)
 	if status != 0 {
 		connect.Where("status = ?", status)
 	}
@@ -108,4 +125,48 @@ func (service Admin) GetBoundConnects(account string) ([]model.Connect, error) {
 		return nil, result.Error
 	}
 	return connects, nil
+}
+
+func (service Admin) Bind(adminId int, authAccount *user.User) (*model.Connect, error) {
+	connect := &model.Connect{}
+	query := database.Query(&model.Connect{})
+	result := query.Where("union_id = ?", authAccount.OpenId).Limit(1).Take(&connect)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result != nil {
+		admin, err := service.FindOneById(connect.AdminId, model.AdminStatusEnabled)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("重复绑定账号：%v", admin.Account)
+	}
+	connect.Account = authAccount.Nickname
+	connect.UnionId = authAccount.OpenId
+	connect.AdminId = adminId
+	connect.Avatar = authAccount.Avatar
+	connect.Type = authAccount.Type
+	connect.Status = model.ConnectStatusEnable
+	result = query.Create(&connect)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return connect, nil
+}
+
+func (service Admin) Auth(authAccount *user.User) (*model.Admin, error) {
+	connect := &model.Connect{}
+	query := database.Query(&model.Connect{})
+	result := query.Where("union_id = ?", authAccount.OpenId).Where("status = ?", model.ConnectStatusEnable).Limit(1).Take(&connect)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result == nil {
+		return nil, fmt.Errorf("没有绑定账号：%v", authAccount.Nickname)
+	}
+	admin, err := service.FindOneById(connect.AdminId, model.AdminStatusEnabled)
+	if err != nil {
+		return nil, err
+	}
+	return admin, nil
 }

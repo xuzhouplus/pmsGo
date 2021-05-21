@@ -2,6 +2,7 @@ package json
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 func Encode(data interface{}) (string, error) {
@@ -13,7 +14,8 @@ func Encode(data interface{}) (string, error) {
 }
 
 func Decode(data string, rt interface{}) error {
-	err := json.Unmarshal([]byte(data), rt)
+	fmt.Println(data)
+	err := json.Unmarshal([]byte(data), &rt)
 	if err != nil {
 		return err
 	}
