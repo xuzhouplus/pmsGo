@@ -15,7 +15,20 @@ type Setting struct {
 }
 
 var SettingService = &Setting{}
+var Settings map[string]string
 
+func (service *Setting) Load() {
+	var data []model.Setting
+	result := database.Query(&model.Setting{}).Find(&data)
+	if result.Error != nil {
+		panic(result.Error)
+	}
+	settings := make(map[string]string, 0)
+	for _, value := range data {
+		settings[value.Key] = value.Value
+	}
+	service.Settings = settings
+}
 func (service Setting) GetPublicSettings() (map[string]interface{}, error) {
 	var returnData = make(map[string]interface{})
 	var data []model.Setting

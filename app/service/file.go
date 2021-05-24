@@ -69,16 +69,38 @@ func (service File) Upload(uploaded *image.Instance, name string, description st
 	}
 	file.Width = fileImage.Width
 	file.Height = fileImage.Height
-	thumb, err := fileImage.CreateThumb(320, 180, "jpg")
-	if err != nil {
-		return nil, err
+	channel := make(chan map[string]string, 2)
+	go func() {
+		thumb, err := fileImage.CreateThumb(320, 180, "jpg")
+		if err != nil {
+			channel <- map[string]string{"error": err.Error()}
+		} else {
+			thumb := image.RelativePath(image.Path(thumb.FullPath()))
+			channel <- map[string]string{"thumb": thumb}
+		}
+	}()
+	go func() {
+		preview, err := fileImage.CreatePreview(62)
+		if err != nil {
+			channel <- map[string]string{"error": err.Error()}
+		}
+		prev := image.RelativePath(image.Path(preview.FullPath()))
+		channel <- map[string]string{"preview": prev}
+	}()
+	for i := range channel {
+		if i["error"] != "" {
+			close(channel)
+			return nil, errors.New(i["error"])
+		}
+		if i["preview"] != "" {
+			file.Preview = i["preview"]
+		} else if i["thumb"] != "" {
+			file.Thumb = i["thumb"]
+		}
+		if file.Preview != "" && file.Thumb != "" {
+			close(channel)
+		}
 	}
-	file.Thumb = image.RelativePath(image.Path(thumb.FullPath()))
-	preview, err := fileImage.CreatePreview(62)
-	if err != nil {
-		return nil, err
-	}
-	file.Preview = image.RelativePath(image.Path(preview.FullPath()))
 	connect := database.Query(&model.File{})
 	result := connect.Create(&file)
 	if result.Error != nil {

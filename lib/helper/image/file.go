@@ -45,10 +45,14 @@ func init() {
 
 func Remove(fullPath string) error {
 	path := UrlToPath(Url(fullPath))
+	if path == "" {
+		return nil
+	}
 	filePath := string(path)
 	_, err := os.Stat(filePath)
 	if err != nil {
-		return err
+		log.Printf(err.Error())
+		return nil
 	}
 	err = os.Remove(filePath)
 	if err != nil {
@@ -58,6 +62,9 @@ func Remove(fullPath string) error {
 }
 
 func FullUrl(relativeUrl string) string {
+	if relativeUrl == "" {
+		return ""
+	}
 	if strings.HasPrefix(relativeUrl, Settings.url) {
 		return relativeUrl
 	}
@@ -66,6 +73,9 @@ func FullUrl(relativeUrl string) string {
 }
 
 func FullPath(relativePath string) string {
+	if relativePath == "" {
+		return ""
+	}
 	if strings.HasPrefix(relativePath, Settings.path) {
 		return relativePath
 	}
@@ -74,6 +84,9 @@ func FullPath(relativePath string) string {
 }
 
 func PathToUrl(path Path) Url {
+	if path == "" {
+		return ""
+	}
 	pathString := string(path)
 	pathString = filepath.FromSlash(pathString)
 	pathString = strings.Replace(pathString, Settings.path, Settings.url, 1)
@@ -81,6 +94,9 @@ func PathToUrl(path Path) Url {
 }
 
 func UrlToPath(url Url) Path {
+	if url == "" {
+		return ""
+	}
 	urlString := string(url)
 	urlString = filepath.ToSlash(urlString)
 	urlString = strings.Replace(urlString, Settings.url, Settings.path, 1)
