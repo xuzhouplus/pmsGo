@@ -18,4 +18,3 @@ type Setting struct {
 	Description string `json:"description"`
 	Required    int    `json:"required"`
 }
-
