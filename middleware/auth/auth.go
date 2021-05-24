@@ -1,13 +1,13 @@
 package auth
 
 import (
-	"encoding/json"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"pmsGo/lib/config"
 	"pmsGo/lib/helper"
+	"pmsGo/lib/security/json"
 	"strings"
 )
 
@@ -24,7 +24,7 @@ func init() {
 func getRequest(ctx *gin.Context) (string, string) {
 	var controller string
 	var action string
-	uri := ctx.Request.RequestURI
+	uri := ctx.Request.URL.Path
 	splits := strings.Split(uri, "/")
 	leng := len(splits)
 	if leng < 2 {
@@ -40,11 +40,7 @@ func getRequest(ctx *gin.Context) (string, string) {
 	return controller, action
 }
 func getAuthType(controller string, action string) interface{} {
-	authSet := settings[controller]
-	//if authSet == nil {
-	//	return nil
-	//}
-	authSetMap := authSet
+	authSetMap := settings[controller]
 	except := authSetMap.Except
 	if except != nil {
 		_, result := helper.IsInSlice(except, action)
@@ -70,17 +66,23 @@ func Register() gin.HandlerFunc {
 			session := sessions.Default(ctx)
 			sessionAdmin := session.Get(SessionLoginAdminKey)
 			if sessionAdmin == nil && authType == nil {
-				ctx.JSON(http.StatusUnauthorized, nil)
+				ctx.JSON(http.StatusUnauthorized, map[string]interface{}{
+					"code":    0,
+					"data":    nil,
+					"message": "Unauthorized",
+				})
 				ctx.Abort()
 				return
 			}
 			if sessionAdmin != nil {
 				loginAdmin := make(map[string]interface{})
-				err := json.Unmarshal(sessionAdmin.([]byte), &loginAdmin)
+				err := json.Decode(sessionAdmin.(string), &loginAdmin)
 				if err != nil {
 					log.Printf("解析session数据失败,%e", err)
 				} else {
-					ctx.Set(ContextLoginAdminKey, loginAdmin)
+					if loginAdmin != nil {
+						ctx.Set(ContextLoginAdminKey, loginAdmin)
+					}
 				}
 			}
 		}

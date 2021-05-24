@@ -38,7 +38,7 @@ func (service Admin) FindOneByUuid(uuid string, status int) (*model.Admin, error
 		connect.Where("status = ?", status)
 	}
 	connect.Limit(1)
-	result := connect.Take(&admin)
+	result := connect.Find(&admin)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -53,7 +53,7 @@ func (service Admin) FindOneById(id int, status int) (*model.Admin, error) {
 		connect.Where("status = ?", status)
 	}
 	connect.Limit(1)
-	result := connect.Take(&admin)
+	result := connect.Find(&admin)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -130,16 +130,15 @@ func (service Admin) GetBoundConnects(account string) ([]model.Connect, error) {
 func (service Admin) Bind(adminId int, authAccount *user.User) (*model.Connect, error) {
 	connect := &model.Connect{}
 	query := database.Query(&model.Connect{})
-	result := query.Where("union_id = ?", authAccount.OpenId).Limit(1).Take(&connect)
-	if result.Error != nil {
-		return nil, result.Error
-	}
+	result := query.Where("union_id = ?", authAccount.OpenId).Limit(1).Find(&connect)
 	if result != nil {
 		admin, err := service.FindOneById(connect.AdminId, model.AdminStatusEnabled)
 		if err != nil {
 			return nil, err
 		}
-		return nil, fmt.Errorf("重复绑定账号：%v", admin.Account)
+		if admin == nil {
+			return nil, fmt.Errorf("重复绑定账号：%v", admin.Account)
+		}
 	}
 	connect.Account = authAccount.Nickname
 	connect.UnionId = authAccount.OpenId
@@ -157,11 +156,11 @@ func (service Admin) Bind(adminId int, authAccount *user.User) (*model.Connect, 
 func (service Admin) Auth(authAccount *user.User) (*model.Admin, error) {
 	connect := &model.Connect{}
 	query := database.Query(&model.Connect{})
-	result := query.Where("union_id = ?", authAccount.OpenId).Where("status = ?", model.ConnectStatusEnable).Limit(1).Take(&connect)
+	result := query.Where("union_id = ?", authAccount.OpenId).Where("status = ?", model.ConnectStatusEnable).Limit(1).Find(&connect)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	if result == nil {
+	if connect == nil {
 		return nil, fmt.Errorf("没有绑定账号：%v", authAccount.Nickname)
 	}
 	admin, err := service.FindOneById(connect.AdminId, model.AdminStatusEnabled)

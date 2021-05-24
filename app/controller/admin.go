@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+	"pmsGo/app/model"
 	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
@@ -123,7 +124,13 @@ func (ctl admin) Connects(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
 	}
-	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, connects, "获取成功"))
+	returnData := make(map[string]model.Connect)
+	if len(connects) > 0 {
+		for _, connect := range connects {
+			returnData[connect.Type] = connect
+		}
+	}
+	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnData, "获取成功"))
 }
 
 func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
@@ -141,7 +148,9 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	adminId := 0
 	if loginData != nil {
 		loginAdmin := loginData.(map[string]interface{})
-		adminId = int(loginAdmin["id"].(float64))
+		if loginAdmin["id"] != nil {
+			adminId = int(loginAdmin["id"].(float64))
+		}
 	}
 	authData := make(map[string]interface{})
 	authData["action"] = ctx.Query("action")
@@ -239,7 +248,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		returnAttr["type"] = admin.Type
 		returnAttr["avatar"] = admin.Avatar
 		returnAttr["account"] = admin.Account
-		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, admin, "登录成功"))
+		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnAttr, "登录成功"))
 	case "bind":
 		bind, err := service.AdminService.Bind(int(authorizeData["admin"].(float64)), user)
 		if err != nil {
