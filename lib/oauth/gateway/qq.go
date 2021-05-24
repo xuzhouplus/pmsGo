@@ -67,8 +67,8 @@ func (gateway Qq) AuthorizeUrl(scope string, redirect string, state string) stri
 	if scope == "" {
 		scope = gateway.Scope()
 	}
-	url := url.URL{}
-	query := url.Query()
+	uri := url.URL{}
+	query := uri.Query()
 	query.Add("client_id", gateway.QqAppId)
 	query.Add("redirect_uri", redirect)
 	query.Add("scope", scope)

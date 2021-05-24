@@ -77,8 +77,8 @@ func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) 
 	if scope == "" {
 		scope = gateway.Scope()
 	}
-	url := url.URL{}
-	query := url.Query()
+	uri := url.URL{}
+	query := uri.Query()
 	query.Add("client_id", gateway.GithubAppId)
 	query.Add("redirect_uri", redirect)
 	query.Add("scope", scope)

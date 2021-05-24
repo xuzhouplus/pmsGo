@@ -1,0 +1,130 @@
+package gateway
+
+import (
+	"fmt"
+	"github.com/idoubi/goz"
+	"net/url"
+	"pmsGo/app/model"
+	"pmsGo/app/service"
+	"pmsGo/lib/config"
+	"pmsGo/lib/security/base64"
+	"pmsGo/lib/security/encrypt"
+)
+
+const GoogleGatewayType = "google"
+const GoogleScopeType = "https://www.googleapis.com/auth/userinfo.profile"
+const GoogleGrantType = "authorization_code"
+const (
+	GoogleAuthorizeUrl   = "https://accounts.google.com/o/oauth2/v2/auth"
+	GoogleAccessTokenUrl = "https://oauth2.googleapis.com/token"
+	GoogleAccessUserUrl  = "https://accounts.google.com/o/oauth2/v2/userinfo"
+)
+
+type GoogleAccessTokenRequest struct {
+	ClientId     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	Code         string `json:"code"`
+	GrantType    string `json:"grant_type"`
+	RedirectUri  string `json:"redirect_uri"`
+}
+
+type Google struct {
+	GoogleAppId     string
+	GoogleAppSecret string
+}
+
+func NewGoogle() (*Google, error) {
+	gateway := &Google{}
+	appId := service.SettingService.GetSetting(model.SettingKeyGoogleAppId)
+	if appId == "" {
+		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyGoogleAppId)
+	}
+	gateway.GoogleAppId = appId
+	appSecret := service.SettingService.GetSetting(model.SettingKeyGoogleAppSecret)
+	if appSecret == "" {
+		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyGoogleAppSecret)
+	}
+	decrypt, err := encrypt.Decrypt(base64.Decode(appSecret), []byte(config.Config.Web.Security["salt"]))
+	if err != nil {
+		return nil, err
+	}
+	gateway.GoogleAppSecret = string(decrypt)
+	return gateway, nil
+}
+
+func (gateway Google) Scope() string {
+	return GoogleScopeType
+}
+
+func (gateway Google) GrantType() string {
+	return GoogleGrantType
+}
+
+func (gateway Google) AuthorizeUrl(scope string, redirect string, state string) string {
+	if scope == "" {
+		scope = gateway.Scope()
+	}
+	uri := url.URL{}
+	query := uri.Query()
+	query.Add("client_id", gateway.GoogleAppId)
+	query.Add("response_type", "code")
+	query.Add("redirect_uri", redirect)
+	query.Add("scope", scope)
+	query.Add("state", state)
+	queryString := query.Encode()
+	return GoogleAuthorizeUrl + "?" + queryString
+}
+
+func (gateway Google) AccessToken(code string, redirect string, state string) (string, error) {
+	requestData := &GoogleAccessTokenRequest{
+		ClientId:     gateway.GoogleAppId,
+		ClientSecret: gateway.GoogleAppSecret,
+		Code:         code,
+		GrantType:    gateway.GrantType(),
+		RedirectUri:  redirect,
+	}
+	client := goz.NewClient()
+	response, err := client.Post(GoogleAccessTokenUrl, goz.Options{
+		Headers: map[string]interface{}{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		JSON: requestData,
+	})
+	if err != nil {
+		return "", err
+	}
+	body, err := response.GetParsedBody()
+	if err != nil {
+		return "", err
+	}
+	return body.Get("access_token").String(), nil
+}
+
+func (gateway Google) User(accessToken string) (map[string]string, error) {
+	client := goz.NewClient()
+	response, err := client.Get(GoogleAccessUserUrl, goz.Options{
+		Headers: map[string]interface{}{
+			"Authorization": "Bearer " + accessToken,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := response.GetParsedBody()
+	if err != nil {
+		return nil, err
+	}
+	sex := "2"
+	if body.Get("gender").String() == "male" {
+		sex = "1"
+	}
+	return map[string]string{
+		"avatar":   body.Get("picture").String(),
+		"channel":  "0",
+		"nickname": body.Get("name").String(),
+		"gender":   sex,
+		"open_id":  body.Get("id").String(),
+		"union_id": body.Get("id").String(),
+	}, nil
+}

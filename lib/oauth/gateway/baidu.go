@@ -71,8 +71,8 @@ func (gateway Baidu) AuthorizeUrl(scope string, redirect string, state string) s
 	if scope == "" {
 		scope = gateway.Scope()
 	}
-	url := url.URL{}
-	query := url.Query()
+	uri := url.URL{}
+	query := uri.Query()
 	query.Add("client_id", gateway.BaiduApiKei)
 	query.Add("response_type", "code")
 	query.Add("redirect_uri", redirect)

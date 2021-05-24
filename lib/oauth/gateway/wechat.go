@@ -64,8 +64,8 @@ func (gateway Wechat) AuthorizeUrl(scope string, redirect string, state string) 
 	if scope == "" {
 		scope = gateway.Scope()
 	}
-	url := url.URL{}
-	query := url.Query()
+	uri := url.URL{}
+	query := uri.Query()
 	query.Add("appid", gateway.WechatAppId)
 	query.Add("redirect_uri", redirect)
 	query.Add("scope", scope)

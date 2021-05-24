@@ -108,8 +108,8 @@ func (gateway Alipay) AuthorizeUrl(scope string, redirect string, state string) 
 	if scope == "" {
 		scope = gateway.Scope()
 	}
-	url := url.URL{}
-	query := url.Query()
+	uri := url.URL{}
+	query := uri.Query()
 	query.Add("app_id", gateway.AlipayAppId)
 	query.Add("response_type", "code")
 	query.Add("redirect_uri", redirect)
