@@ -62,7 +62,7 @@ func (gateway Line) GrantType() string {
 	return LineGrantType
 }
 
-func (gateway Line) AuthorizeUrl(scope string, redirect string, state string) string {
+func (gateway Line) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -74,7 +74,7 @@ func (gateway Line) AuthorizeUrl(scope string, redirect string, state string) st
 	query.Add("scope", scope)
 	query.Add("state", state)
 	queryString := query.Encode()
-	return LineAuthorizeUrl + "?" + queryString
+	return LineAuthorizeUrl + "?" + queryString, nil
 }
 
 func (gateway Line) AccessToken(code string, redirect string, state string) (string, error) {

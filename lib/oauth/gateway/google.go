@@ -60,7 +60,7 @@ func (gateway Google) GrantType() string {
 	return GoogleGrantType
 }
 
-func (gateway Google) AuthorizeUrl(scope string, redirect string, state string) string {
+func (gateway Google) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -72,7 +72,7 @@ func (gateway Google) AuthorizeUrl(scope string, redirect string, state string) 
 	query.Add("scope", scope)
 	query.Add("state", state)
 	queryString := query.Encode()
-	return GoogleAuthorizeUrl + "?" + queryString
+	return GoogleAuthorizeUrl + "?" + queryString, nil
 }
 
 func (gateway Google) AccessToken(code string, redirect string, state string) (string, error) {

@@ -73,7 +73,7 @@ func (gateway GitHub) Scope() string {
 func (gateway GitHub) GrantType() string {
 	return GitHubGrantType
 }
-func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) string {
+func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -85,7 +85,7 @@ func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) 
 	query.Add("state", state)
 	query.Add("allow_signup", "true")
 	queryString := query.Encode()
-	return GitHubAuthorizeUrl + "?" + queryString
+	return GitHubAuthorizeUrl + "?" + queryString, nil
 }
 
 func (gateway GitHub) AccessToken(code string, redirect string, state string) (string, error) {

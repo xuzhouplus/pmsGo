@@ -2,6 +2,9 @@ package gateway
 
 import (
 	"fmt"
+	"github.com/idoubi/goz"
+	"log"
+	"net/url"
 	"pmsGo/app/model"
 	"pmsGo/app/service"
 	"pmsGo/lib/config"
@@ -11,15 +14,19 @@ import (
 
 const FacebookGatewayType = "facebook"
 
-const FacebookScopeType = ""
-const FacebookGrantType = ""
+const FacebookScopeType = "public_profile"
+const FacebookGrantType = "authorization_code"
 const (
-	FacebookAuthorizeUrl    = ""
-	FacebookAccessTokenUrl  = ""
-	FacebookAccessUserUrl = ""
+	FacebookAuthorizeUrl   = "https://www.facebook.com/v10.0/dialog/oauth"
+	FacebookAccessTokenUrl = "https://graph.facebook.com/v10.0/oauth/access_token"
+	FacebookAccessUserUrl  = "https://graph.facebook.com/me"
 )
 
 type FacebookAccessTokenRequest struct {
+	ClientId     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	Code         string `json:"code"`
+	RedirectUri  string `json:"redirect_uri"`
 }
 
 type Facebook struct {
@@ -54,14 +61,72 @@ func (gateway Facebook) GrantType() string {
 	return FacebookGrantType
 }
 
-func (gateway Facebook) AuthorizeUrl(scope string, redirect string, state string) string {
-	panic("implement me")
+func (gateway Facebook) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
+	if scope == "" {
+		scope = gateway.Scope()
+	}
+	uri := url.URL{}
+	query := uri.Query()
+	query.Add("client_id", gateway.FacebookAppId)
+	query.Add("response_type", "code")
+	query.Add("redirect_uri", redirect)
+	query.Add("scope", scope)
+	query.Add("state", state)
+	queryString := query.Encode()
+	return FacebookAuthorizeUrl + "?" + queryString, nil
 }
 
 func (gateway Facebook) AccessToken(code string, redirect string, state string) (string, error) {
-	panic("implement me")
+	requestData := &FacebookAccessTokenRequest{
+		ClientId:     gateway.FacebookAppId,
+		ClientSecret: gateway.FacebookAppSecret,
+		Code:         code,
+		RedirectUri:  redirect,
+	}
+	client := goz.NewClient()
+	response, err := client.Post(FacebookAccessTokenUrl, goz.Options{
+		Headers: map[string]interface{}{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		JSON: requestData,
+	})
+	if err != nil {
+		return "", err
+	}
+	body, err := response.GetParsedBody()
+	if err != nil {
+		return "", err
+	}
+	return body.Get("access_token").String(), nil
 }
 
 func (gateway Facebook) User(accessToken string) (map[string]string, error) {
-	panic("implement me")
+	client := goz.NewClient()
+	response, err := client.Get(FacebookAccessUserUrl, goz.Options{
+		Query: map[string]string{
+			"access_token": accessToken,
+			"fields":       "id,name,gender,picture.width(400)",
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := response.GetParsedBody()
+	if err != nil {
+		return nil, err
+	}
+	log.Println(body)
+	sex := "2"
+	if body.Get("gender").String() == "main" {
+		sex = "1"
+	}
+	return map[string]string{
+		"avatar":   body.Get("picture.data.url").String(),
+		"channel":  "0",
+		"nickname": body.Get("name").String(),
+		"gender":   sex,
+		"open_id":  body.Get("id").String(),
+		"union_id": body.Get("id").String(),
+	}, nil
 }

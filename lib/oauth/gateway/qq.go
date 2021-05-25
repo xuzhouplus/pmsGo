@@ -63,7 +63,7 @@ func (gateway Qq) GrantType() string {
 	return QqGrantType
 }
 
-func (gateway Qq) AuthorizeUrl(scope string, redirect string, state string) string {
+func (gateway Qq) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -75,7 +75,7 @@ func (gateway Qq) AuthorizeUrl(scope string, redirect string, state string) stri
 	query.Add("state", state)
 	query.Add("response_type", "code")
 	queryString := query.Encode()
-	return QqAuthorizeUrl + "?" + queryString
+	return QqAuthorizeUrl + "?" + queryString, nil
 }
 
 func (gateway *Qq) AccessToken(code string, redirect string, state string) (string, error) {

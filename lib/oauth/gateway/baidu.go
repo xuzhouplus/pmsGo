@@ -67,7 +67,7 @@ func (gateway Baidu) GrantType() string {
 	return BaiduGrantType
 }
 
-func (gateway Baidu) AuthorizeUrl(scope string, redirect string, state string) string {
+func (gateway Baidu) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -82,7 +82,7 @@ func (gateway Baidu) AuthorizeUrl(scope string, redirect string, state string) s
 	query.Add("force_login", "1")
 	query.Add("qrcode", "1")
 	queryString := query.Encode()
-	return BaiduAuthorizeUrl + "?" + queryString
+	return BaiduAuthorizeUrl + "?" + queryString, nil
 }
 
 func (gateway Baidu) AccessToken(code string, redirect string, state string) (string, error) {

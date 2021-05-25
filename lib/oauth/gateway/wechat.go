@@ -60,7 +60,7 @@ func (gateway Wechat) GrantType() string {
 	return WechatGrantType
 }
 
-func (gateway Wechat) AuthorizeUrl(scope string, redirect string, state string) string {
+func (gateway Wechat) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -72,7 +72,7 @@ func (gateway Wechat) AuthorizeUrl(scope string, redirect string, state string) 
 	query.Add("state", state)
 	query.Add("response_type", "code")
 	queryString := query.Encode()
-	return WechatAuthorizeUrl + "?" + queryString + "#wechat_redirect"
+	return WechatAuthorizeUrl + "?" + queryString + "#wechat_redirect", nil
 }
 
 func (gateway *Wechat) AccessToken(code string, redirect string, state string) (string, error) {

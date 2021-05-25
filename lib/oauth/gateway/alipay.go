@@ -104,7 +104,7 @@ func (gateway Alipay) signature(params map[string]interface{}) string {
 	return base64.Encode(signature)
 }
 
-func (gateway Alipay) AuthorizeUrl(scope string, redirect string, state string) string {
+func (gateway Alipay) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -116,7 +116,7 @@ func (gateway Alipay) AuthorizeUrl(scope string, redirect string, state string) 
 	query.Add("scope", scope)
 	query.Add("state", state)
 	queryString := query.Encode()
-	return AlipayAuthorizeUrl + "?" + queryString
+	return AlipayAuthorizeUrl + "?" + queryString, nil
 }
 
 func (gateway Alipay) AccessToken(code string, redirect string, state string) (string, error) {
@@ -136,7 +136,7 @@ func (gateway Alipay) AccessToken(code string, redirect string, state string) (s
 	response, err := client.Post(AlipayGatewayUrl, goz.Options{
 		Debug: true,
 		Headers: map[string]interface{}{
-			"Accept":       "application/json",
+			"Accept": "application/json",
 		},
 		FormParams: queryData,
 	})
@@ -170,7 +170,7 @@ func (gateway Alipay) User(accessToken string) (map[string]string, error) {
 	client := goz.NewClient()
 	response, err := client.Post(AlipayGatewayUrl, goz.Options{
 		Headers: map[string]interface{}{
-			"Accept":       "application/json",
+			"Accept": "application/json",
 		},
 		FormParams: queryData,
 	})

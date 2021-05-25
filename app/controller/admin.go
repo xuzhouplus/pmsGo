@@ -142,7 +142,11 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	}
 	redirect := config.Config.Web.Host + "/profile/authorize/" + gatewayType
 	state := random.Uuid(false)
-	authorizeUrl := oauthGateway.AuthorizeUrl(ctx.Query("scope"), redirect, state)
+	authorizeUrl, err := oauthGateway.AuthorizeUrl(ctx.Query("scope"), redirect, state)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
+		return
+	}
 	session := sessions.Default(ctx)
 	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
 	adminId := 0
