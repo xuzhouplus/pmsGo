@@ -261,6 +261,11 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		returnAttr["account"] = admin.Account
 		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnAttr, "登录成功"))
 	case "bind":
+		contextLoginAdmin, exists := ctx.Get(auth.ContextLoginAdminKey)
+		if (!exists) || contextLoginAdmin == nil {
+			ctx.JSON(http.StatusUnauthorized, ctl.Response(controller.CodeOk, nil, "需要登录"))
+			return
+		}
 		bind, err := service.AdminService.Bind(int(authorizeData["admin"].(float64)), user)
 		if err != nil {
 			log.Println(err)
