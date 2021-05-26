@@ -2,7 +2,9 @@ package helper
 
 import (
 	"math/rand"
+	"net/url"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -63,4 +65,10 @@ func DynamicInvoke(object interface{}, methodName string, args ...interface{}) {
 
 	//动态访问属性
 	reflect.ValueOf(object).Elem().FieldByName("Name")
+}
+func UrlEncode(str string) string {
+	return url.QueryEscape(str)
+}
+func RawUrlEncode(str string) string {
+	return strings.Replace(UrlEncode(str), "+", "%20", -1)
 }

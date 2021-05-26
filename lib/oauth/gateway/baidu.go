@@ -67,7 +67,7 @@ func (gateway Baidu) GrantType() string {
 	return BaiduGrantType
 }
 
-func (gateway Baidu) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
+func (gateway Baidu) AuthorizeUrl(scope string, redirect string, state string) (string, string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -82,18 +82,23 @@ func (gateway Baidu) AuthorizeUrl(scope string, redirect string, state string) (
 	query.Add("force_login", "1")
 	query.Add("qrcode", "1")
 	queryString := query.Encode()
-	return BaiduAuthorizeUrl + "?" + queryString, nil
+	return BaiduAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway Baidu) AccessToken(code string, redirect string, state string) (string, error) {
-	requestData := &BaiduAccessTokenRequest{gateway.GrantType(), code, gateway.BaiduApiKei, gateway.BaiduSecretKey, redirect}
+func (gateway Baidu) AccessToken(callbackData map[string]string, redirect string) (string, error) {
 	client := goz.NewClient()
-	response, err := client.Post(BaiduAccessTokenUrl, goz.Options{
+	response, err := client.Get(BaiduAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		JSON: requestData,
+		Query: map[string]string{
+			"grant_type":    gateway.GrantType(),
+			"code":          callbackData["code"],
+			"client_id":     gateway.BaiduApiKei,
+			"client_secret": gateway.BaiduSecretKey,
+			"redirect_uri":  redirect,
+		},
 	})
 	if err != nil {
 		return "", err

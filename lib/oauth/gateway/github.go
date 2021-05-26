@@ -33,7 +33,6 @@ type GitHubAccessTokenRequest struct {
 	ClientSecret string `json:"client_secret"`
 	Code         string `json:"code"`
 	RedirectUri  string `json:"redirect_uri"`
-	State        string `json:"state"`
 }
 
 type GitHubAccessTokenResponse struct {
@@ -73,7 +72,7 @@ func (gateway GitHub) Scope() string {
 func (gateway GitHub) GrantType() string {
 	return GitHubGrantType
 }
-func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
+func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) (string, string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -85,11 +84,11 @@ func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) 
 	query.Add("state", state)
 	query.Add("allow_signup", "true")
 	queryString := query.Encode()
-	return GitHubAuthorizeUrl + "?" + queryString, nil
+	return GitHubAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway GitHub) AccessToken(code string, redirect string, state string) (string, error) {
-	requestData := &GitHubAccessTokenRequest{gateway.GithubAppId, gateway.GithubAppSecret, code, redirect, state}
+func (gateway GitHub) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+	requestData := &GitHubAccessTokenRequest{gateway.GithubAppId, gateway.GithubAppSecret, callbackData["code"], redirect}
 	client := goz.NewClient()
 	response, err := client.Post(GitHubAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{

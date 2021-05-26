@@ -72,7 +72,7 @@ func (gateway Weibo) GrantType() string {
 	return WeiboGrantType
 }
 
-func (gateway Weibo) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
+func (gateway Weibo) AuthorizeUrl(scope string, redirect string, state string) (string, string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -85,15 +85,15 @@ func (gateway Weibo) AuthorizeUrl(scope string, redirect string, state string) (
 	query.Add("display", WeiboAuthorizeDisplay)
 	query.Add("forcelogin", "true")
 	queryString := query.Encode()
-	return WeiboAuthorizeUrl + "?" + queryString, nil
+	return WeiboAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway *Weibo) AccessToken(code string, redirect string, state string) (string, error) {
+func (gateway *Weibo) AccessToken(callbackData map[string]string, redirect string) (string, error) {
 	requestData := &WeiboAccessTokenRequest{
 		ClientId:     gateway.WeiboAppKey,
 		ClientSecret: gateway.WeiboAppSecret,
 		GrantType:    gateway.GrantType(),
-		Code:         code,
+		Code:         callbackData["code"],
 		RedirectUri:  redirect,
 	}
 	client := goz.NewClient()

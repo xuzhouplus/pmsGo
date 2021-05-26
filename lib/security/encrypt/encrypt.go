@@ -14,7 +14,7 @@ import (
 	"io"
 )
 
-func hashHmac(algo func() hash.Hash, data []byte, key []byte, rawHash bool) []byte {
+func HashHmac(algo func() hash.Hash, data []byte, key []byte, rawHash bool) []byte {
 	hash := hmac.New(algo, key)
 	hash.Write(data)
 	rawData := hash.Sum(nil)
@@ -24,7 +24,7 @@ func hashHmac(algo func() hash.Hash, data []byte, key []byte, rawHash bool) []by
 	hexData := hex.EncodeToString(rawData)
 	return []byte(hexData)
 }
-func hashHkdf(algo func() hash.Hash, secret []byte, salt []byte, info []byte, length int) []byte {
+func HashHkdf(algo func() hash.Hash, secret []byte, salt []byte, info []byte, length int) []byte {
 	keyHkdf := hkdf.New(algo, secret, salt, info)
 	key := make([]byte, length)
 	io.ReadFull(keyHkdf, key)
@@ -38,7 +38,7 @@ func validateData(algo func() hash.Hash, data []byte, key []byte) []byte {
 	if dataLen >= hashLen {
 		hashData := data[0:hashLen]
 		pureData := data[hashLen:]
-		calculatedHash := hashHmac(algo, pureData, key, false)
+		calculatedHash := HashHmac(algo, pureData, key, false)
 		if hmac.Equal(hashData, calculatedHash) {
 			return pureData
 		}
@@ -54,7 +54,7 @@ func randomBytes(length int) []byte {
 	return random
 }
 func hashData(data []byte, key []byte, rawHash bool) []byte {
-	hash := hashHmac(sha256.New, data, key, rawHash)
+	hash := HashHmac(sha256.New, data, key, rawHash)
 	return append(hash, data...)
 }
 func PKCS7Padding(ciphertext []byte, blocksize int) []byte {
@@ -93,10 +93,10 @@ func opensslDecrypt(data []byte, key []byte) ([]byte, error) {
 
 func Encrypt(data []byte, salt []byte) ([]byte, error) {
 	keySalt := randomBytes(16)
-	key := hashHkdf(sha256.New, salt, keySalt, nil, 16)
+	key := HashHkdf(sha256.New, salt, keySalt, nil, 16)
 	iv := randomBytes(16)
 	encrypted, _ := opensslEncrypt(data, key, iv)
-	authKey := hashHkdf(sha256.New, key, nil, []byte("AuthorizationKey"), 16)
+	authKey := HashHkdf(sha256.New, key, nil, []byte("AuthorizationKey"), 16)
 	hashed := hashData(append(iv, encrypted...), authKey, false)
 	d := append(keySalt, hashed...)
 	return d, nil
@@ -104,8 +104,8 @@ func Encrypt(data []byte, salt []byte) ([]byte, error) {
 
 func Decrypt(encrypted []byte, salt []byte) ([]byte, error) {
 	keySalt := encrypted[0:16]
-	key := hashHkdf(sha256.New, salt, keySalt, nil, 16)
-	authKey := hashHkdf(sha256.New, key, nil, []byte("AuthorizationKey"), 16)
+	key := HashHkdf(sha256.New, salt, keySalt, nil, 16)
+	authKey := HashHkdf(sha256.New, key, nil, []byte("AuthorizationKey"), 16)
 	data := validateData(sha256.New, encrypted[16:], authKey)
 	if data == nil {
 		return nil, errors.New("解析错误")

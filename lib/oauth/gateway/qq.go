@@ -63,7 +63,7 @@ func (gateway Qq) GrantType() string {
 	return QqGrantType
 }
 
-func (gateway Qq) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
+func (gateway Qq) AuthorizeUrl(scope string, redirect string, state string) (string, string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -75,25 +75,24 @@ func (gateway Qq) AuthorizeUrl(scope string, redirect string, state string) (str
 	query.Add("state", state)
 	query.Add("response_type", "code")
 	queryString := query.Encode()
-	return QqAuthorizeUrl + "?" + queryString, nil
+	return QqAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway *Qq) AccessToken(code string, redirect string, state string) (string, error) {
-	requestData := &QqAccessTokenRequest{
-		GrantType:    gateway.GrantType(),
-		ClientId:     gateway.QqAppId,
-		ClientSecret: gateway.QqAppSecret,
-		Code:         code,
-		RedirectUri:  redirect,
-		Fmt:          "json",
-	}
+func (gateway *Qq) AccessToken(callbackData map[string]string, redirect string) (string, error) {
 	client := goz.NewClient()
-	response, err := client.Post(QqAccessTokenUrl, goz.Options{
+	response, err := client.Get(QqAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		JSON: requestData,
+		Query: map[string]string{
+			"grant_type":    gateway.GrantType(),
+			"client_id":     gateway.QqAppId,
+			"client_secret": gateway.QqAppSecret,
+			"code":          callbackData["code"],
+			"redirect_uri":  redirect,
+			"fmt":           "json",
+		},
 	})
 	if err != nil {
 		return "", err

@@ -62,7 +62,7 @@ func (gateway Line) GrantType() string {
 	return LineGrantType
 }
 
-func (gateway Line) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
+func (gateway Line) AuthorizeUrl(scope string, redirect string, state string) (string, string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -74,10 +74,10 @@ func (gateway Line) AuthorizeUrl(scope string, redirect string, state string) (s
 	query.Add("scope", scope)
 	query.Add("state", state)
 	queryString := query.Encode()
-	return LineAuthorizeUrl + "?" + queryString, nil
+	return LineAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway Line) AccessToken(code string, redirect string, state string) (string, error) {
+func (gateway Line) AccessToken(callbackData map[string]string, redirect string) (string, error) {
 	client := goz.NewClient()
 	response, err := client.Post(LineAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
@@ -85,7 +85,7 @@ func (gateway Line) AccessToken(code string, redirect string, state string) (str
 			"Accept":       "application/json",
 		},
 		FormParams: map[string]interface{}{
-			"code":          code,
+			"code":          callbackData["code"],
 			"grant_type":    gateway.GrantType(),
 			"client_id":     gateway.LineAppId,
 			"client_secret": gateway.LineAppSecret,

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"pmsGo/lib/oauth/gateway"
 	"pmsGo/lib/oauth/user"
+	"pmsGo/lib/security/random"
 )
 
 type Oauth struct {
@@ -44,11 +45,15 @@ func NewOauth(gatewayType string) (*Oauth, error) {
 	oauth := &Oauth{Type: gatewayType, Instance: gatewayInstance}
 	return oauth, nil
 }
-func (oauth Oauth) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
+func (oauth Oauth) AuthorizeUrl(scope string, redirect string) (string, string, error) {
+	state := ""
+	if oauth.Type != gateway.TwitterGatewayType {
+		state = random.Uuid(false)
+	}
 	return oauth.Instance.AuthorizeUrl(scope, redirect, state)
 }
-func (oauth Oauth) AccessToken(code string, redirect string, state string) (string, error) {
-	token, err := oauth.Instance.AccessToken(code, redirect, state)
+func (oauth Oauth) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+	token, err := oauth.Instance.AccessToken(callbackData, redirect)
 	if err != nil {
 		return "", err
 	}

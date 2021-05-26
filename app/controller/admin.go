@@ -11,8 +11,8 @@ import (
 	"pmsGo/lib/controller"
 	"pmsGo/lib/helper/image"
 	"pmsGo/lib/oauth"
+	"pmsGo/lib/oauth/gateway"
 	"pmsGo/lib/security/json"
-	"pmsGo/lib/security/random"
 	"pmsGo/middleware/auth"
 )
 
@@ -141,8 +141,7 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 		return
 	}
 	redirect := config.Config.Web.Host + "/profile/authorize/" + gatewayType
-	state := random.Uuid(false)
-	authorizeUrl, err := oauthGateway.AuthorizeUrl(ctx.Query("scope"), redirect, state)
+	authorizeUrl, state, err := oauthGateway.AuthorizeUrl(ctx.Query("scope"), redirect)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
@@ -179,12 +178,13 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 }
 
 func (ctl admin) AuthorizeUser(ctx *gin.Context) {
-	code := ctx.Query("code")
-	if code == "" {
-		//兼容支付宝
-		code = ctx.Query("auth_code")
+	requestData := make(map[string]string)
+	err := ctx.ShouldBindQuery(&requestData)
+	if err != nil {
+		log.Println(err)
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
+		return
 	}
-	state := ctx.Query("state")
 	session := sessions.Default(ctx)
 	sessionData := session.Get("authorize")
 	if sessionData == nil {
@@ -193,7 +193,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		return
 	}
 	authorizeData := make(map[string]interface{})
-	err := json.Decode(sessionData.(string), &authorizeData)
+	err = json.Decode(sessionData.(string), &authorizeData)
 	if err != nil {
 		log.Println("授权数据解析失败")
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
@@ -204,23 +204,30 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
 		return
 	}
-	sessionState := authorizeData["state"].(string)
-	if sessionState != state {
-		log.Println("授权数据state无效")
-		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
-		return
-	}
 	if authorizeData["gateway"] == nil {
 		log.Println("授权数据gateway无效")
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
 		return
+	}
+	if authorizeData["gateway"].(string) == gateway.TwitterGatewayType {
+		if requestData["oauth_token"] != authorizeData["state"].(string) {
+			log.Println("授权数据oauth_token无效")
+			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
+			return
+		}
+	} else {
+		if requestData["state"] != authorizeData["state"].(string) {
+			log.Println("授权数据state无效")
+			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
+			return
+		}
 	}
 	oauthGateway, err := oauth.NewOauth(authorizeData["gateway"].(string))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
-	token, err := oauthGateway.AccessToken(code, authorizeData["redirect"].(string), state)
+	token, err := oauthGateway.AccessToken(requestData, authorizeData["redirect"].(string))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return

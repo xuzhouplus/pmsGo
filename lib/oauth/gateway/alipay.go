@@ -96,7 +96,7 @@ func (gateway Alipay) signature(params map[string]interface{}) string {
 		}
 	}
 	sort.Strings(pList)
-	var src = strings.Join(pList, "&")
+	src := strings.Join(pList, "&")
 	signature, err := rsa.RSASignWithPKCS8([]byte(src), gateway.AlipayAppPrimaryKey, crypto.SHA256)
 	if err != nil {
 		panic(err.Error())
@@ -104,7 +104,7 @@ func (gateway Alipay) signature(params map[string]interface{}) string {
 	return base64.Encode(signature)
 }
 
-func (gateway Alipay) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
+func (gateway Alipay) AuthorizeUrl(scope string, redirect string, state string) (string, string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -116,10 +116,10 @@ func (gateway Alipay) AuthorizeUrl(scope string, redirect string, state string) 
 	query.Add("scope", scope)
 	query.Add("state", state)
 	queryString := query.Encode()
-	return AlipayAuthorizeUrl + "?" + queryString, nil
+	return AlipayAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway Alipay) AccessToken(code string, redirect string, state string) (string, error) {
+func (gateway Alipay) AccessToken(callbackData map[string]string, redirect string) (string, error) {
 	queryData := map[string]interface{}{
 		"app_id":     gateway.AlipayAppId,
 		"method":     "alipay.system.oauth.token",
@@ -128,7 +128,7 @@ func (gateway Alipay) AccessToken(code string, redirect string, state string) (s
 		"timestamp":  time.Now().Format("2006-01-02 15:04:05"),
 		"version":    "1.0",
 		"grant_type": gateway.GrantType(),
-		"code":       code,
+		"code":       callbackData["auth_code"],
 		"format":     "JSON",
 	}
 	queryData["sign"] = gateway.signature(queryData)

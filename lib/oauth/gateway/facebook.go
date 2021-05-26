@@ -61,7 +61,7 @@ func (gateway Facebook) GrantType() string {
 	return FacebookGrantType
 }
 
-func (gateway Facebook) AuthorizeUrl(scope string, redirect string, state string) (string, error) {
+func (gateway Facebook) AuthorizeUrl(scope string, redirect string, state string) (string, string, error) {
 	if scope == "" {
 		scope = gateway.Scope()
 	}
@@ -73,23 +73,22 @@ func (gateway Facebook) AuthorizeUrl(scope string, redirect string, state string
 	query.Add("scope", scope)
 	query.Add("state", state)
 	queryString := query.Encode()
-	return FacebookAuthorizeUrl + "?" + queryString, nil
+	return FacebookAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway Facebook) AccessToken(code string, redirect string, state string) (string, error) {
-	requestData := &FacebookAccessTokenRequest{
-		ClientId:     gateway.FacebookAppId,
-		ClientSecret: gateway.FacebookAppSecret,
-		Code:         code,
-		RedirectUri:  redirect,
-	}
+func (gateway Facebook) AccessToken(callbackData map[string]string, redirect string) (string, error) {
 	client := goz.NewClient()
-	response, err := client.Post(FacebookAccessTokenUrl, goz.Options{
+	response, err := client.Get(FacebookAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		JSON: requestData,
+		Query: map[string]string{
+			"client_id":     gateway.FacebookAppId,
+			"client_secret": gateway.FacebookAppSecret,
+			"code":          callbackData["code"],
+			"redirect_uri":  redirect,
+		},
 	})
 	if err != nil {
 		return "", err
