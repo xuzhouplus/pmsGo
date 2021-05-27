@@ -29,6 +29,32 @@ func (service *Setting) Load() {
 	}
 	service.Settings = settings
 }
+func (service Setting) UnsafeSettings() []string {
+	return []string{
+		model.SettingKeyBaiduSecretKey,
+		model.SettingKeyAlipayAppPrimaryKey,
+		model.SettingKeyTwitterAppSecret,
+		model.SettingKeyWechatAppSecret,
+		model.SettingKeyWeiboAppSecret,
+		model.SettingKeyGithubAppSecret,
+		model.SettingKeyGoogleAppSecret,
+		model.SettingKeyTwitterAppSecret,
+		model.SettingKeyLineAppSecret,
+		model.SettingKeyFacebookAppSecret,
+		model.SettingKeyGiteeAppSecret,
+	}
+}
+
+func (service Setting) IsUnsafeSetting(settingKey string) bool {
+	unsafeSettings := service.UnsafeSettings()
+	for _, setting := range unsafeSettings {
+		if setting == settingKey {
+			return true
+		}
+	}
+	return false
+}
+
 func (service Setting) GetPublicSettings() (map[string]interface{}, error) {
 	var returnData = make(map[string]interface{})
 	var data []model.Setting
@@ -106,6 +132,9 @@ func (service Setting) Find(keys []string, indexBy string) map[string]model.Sett
 func (service *Setting) Save(keyPairs map[string]interface{}) error {
 	connect := database.DB.Begin()
 	for key, value := range keyPairs {
+		if value == "" && service.IsUnsafeSetting(key) {
+			continue
+		}
 		result := connect.Model(&model.Setting{}).Where("`key` = ?", key).Update("value", value)
 		if result.Error != nil {
 			connect.Rollback()
@@ -113,6 +142,9 @@ func (service *Setting) Save(keyPairs map[string]interface{}) error {
 		}
 	}
 	for key, value := range keyPairs {
+		if value == "" && service.IsUnsafeSetting(key) {
+			continue
+		}
 		var setVal string
 		switch value.(type) {
 		case string:

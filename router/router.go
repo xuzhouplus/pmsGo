@@ -64,6 +64,10 @@ func Router(engine *gin.Engine) {
 		setting.GET("/github", auth.Register(), controller.Setting.Github)
 		//保存github互联配置
 		setting.POST("/github", auth.Register(), controller.Setting.Github)
+		//获取码云互联配置
+		setting.GET("/gitee", auth.Register(), controller.Setting.Gitee)
+		//保存码云互联配置
+		setting.POST("/gitee", auth.Register(), controller.Setting.Gitee)
 		//获取google互联配置
 		setting.GET("/google", auth.Register(), controller.Setting.Google)
 		//保存google互联陪孩子

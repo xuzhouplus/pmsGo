@@ -65,16 +65,17 @@ func Register() gin.HandlerFunc {
 		if authType != "except" {
 			session := sessions.Default(ctx)
 			sessionAdmin := session.Get(SessionLoginAdminKey)
-			if sessionAdmin == nil && authType == nil {
-				ctx.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"code":    0,
-					"data":    nil,
-					"message": "Unauthorized",
-				})
-				ctx.Abort()
-				return
-			}
-			if sessionAdmin != nil {
+			if sessionAdmin == nil {
+				if authType == nil {
+					ctx.JSON(http.StatusUnauthorized, map[string]interface{}{
+						"code":    0,
+						"data":    nil,
+						"message": "Unauthorized",
+					})
+					ctx.Abort()
+					return
+				}
+			} else {
 				loginAdmin := make(map[string]interface{})
 				err := json.Decode(sessionAdmin.(string), &loginAdmin)
 				if err != nil {

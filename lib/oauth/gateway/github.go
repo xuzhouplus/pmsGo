@@ -33,6 +33,7 @@ type GitHubAccessTokenRequest struct {
 	ClientSecret string `json:"client_secret"`
 	Code         string `json:"code"`
 	RedirectUri  string `json:"redirect_uri"`
+	GrantType    string `json:"grant_type"`
 }
 
 type GitHubAccessTokenResponse struct {
@@ -88,7 +89,13 @@ func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) 
 }
 
 func (gateway GitHub) AccessToken(callbackData map[string]string, redirect string) (string, error) {
-	requestData := &GitHubAccessTokenRequest{gateway.GithubAppId, gateway.GithubAppSecret, callbackData["code"], redirect}
+	requestData := &GitHubAccessTokenRequest{
+		ClientId:     gateway.GithubAppId,
+		ClientSecret: gateway.GithubAppSecret,
+		Code:         callbackData["code"],
+		RedirectUri:  redirect,
+		GrantType:    gateway.GrantType(),
+	}
 	client := goz.NewClient()
 	response, err := client.Post(GitHubAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
@@ -109,7 +116,7 @@ func (gateway GitHub) AccessToken(callbackData map[string]string, redirect strin
 
 func (gateway GitHub) User(accessToken string) (map[string]string, error) {
 	client := goz.NewClient()
-	response, err := client.Get(GitHubAccessTokenUrl, goz.Options{
+	response, err := client.Get(GitHubAccessUserUrl, goz.Options{
 		Headers: map[string]interface{}{
 			"Content-Type":    "application/json",
 			"Accept":          "application/json",
@@ -126,5 +133,12 @@ func (gateway GitHub) User(accessToken string) (map[string]string, error) {
 		return nil, err
 	}
 	log.Println(body)
-	return nil, nil
+	return map[string]string{
+		"avatar":   body.Get("avatar_url").String(),
+		"channel":  "0",
+		"nickname": body.Get("name").String(),
+		"gender":   "0",
+		"open_id":  body.Get("id").String(),
+		"union_id": body.Get("id").String(),
+	}, nil
 }

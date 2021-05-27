@@ -178,12 +178,14 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 }
 
 func (ctl admin) AuthorizeUser(ctx *gin.Context) {
-	requestData := make(map[string]string)
-	err := ctx.ShouldBindQuery(&requestData)
-	if err != nil {
-		log.Println(err)
+	requestData := ctx.Request.URL.Query()
+	if len(requestData) == 0 {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
 		return
+	}
+	callbackData := make(map[string]string)
+	for field, strings := range requestData {
+		callbackData[field] = strings[0]
 	}
 	session := sessions.Default(ctx)
 	sessionData := session.Get("authorize")
@@ -193,7 +195,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		return
 	}
 	authorizeData := make(map[string]interface{})
-	err = json.Decode(sessionData.(string), &authorizeData)
+	err := json.Decode(sessionData.(string), &authorizeData)
 	if err != nil {
 		log.Println("授权数据解析失败")
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
@@ -210,13 +212,15 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		return
 	}
 	if authorizeData["gateway"].(string) == gateway.TwitterGatewayType {
-		if requestData["oauth_token"] != authorizeData["state"].(string) {
+		if callbackData["oauth_token"] != authorizeData["state"].(string) {
 			log.Println("授权数据oauth_token无效")
 			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
 			return
 		}
 	} else {
-		if requestData["state"] != authorizeData["state"].(string) {
+		log.Println(callbackData["state"])
+		log.Println(callbackData["state"])
+		if callbackData["state"] != authorizeData["state"] {
 			log.Println("授权数据state无效")
 			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
 			return
@@ -227,7 +231,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
-	token, err := oauthGateway.AccessToken(requestData, authorizeData["redirect"].(string))
+	token, err := oauthGateway.AccessToken(callbackData, authorizeData["redirect"].(string))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
@@ -249,9 +253,8 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "登录失败"))
 			return
 		}
-		loginAdmin := make(map[string]interface{})
 		session := sessions.Default(ctx)
-		data, _ := json.Encode(loginAdmin)
+		data, _ := json.Encode(admin)
 		session.Set(auth.SessionLoginAdminKey, data)
 		session.Save()
 		returnAttr := make(map[string]string)
