@@ -7,6 +7,20 @@ const (
 	ConnectStatusDisable = 2
 )
 
+const (
+	ConnectTypeAlipay   = "alipay"
+	ConnectTypeBaidu    = "baidu"
+	ConnectTypeFacebook = "facebook"
+	ConnectTypeGitee    = "gitee"
+	ConnectTypeGithub   = "github"
+	ConnectTypeGoogle   = "google"
+	ConnectTypeLine     = "line"
+	ConnectTypeQq       = "qq"
+	ConnectTypeTwitter  = "twitter"
+	ConnectTypeWechat   = "wechat"
+	ConnectTypeWeibo    = "weibo"
+)
+
 type Connect struct {
 	ID        int       `gorm:"private_key" json:"id"`
 	AdminId   int       `json:"admin_id"`

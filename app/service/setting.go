@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"log"
 	"pmsGo/app/model"
 	"pmsGo/lib/config"
 	"pmsGo/lib/database"
@@ -54,7 +55,60 @@ func (service Setting) IsUnsafeSetting(settingKey string) bool {
 	}
 	return false
 }
-
+func (service Setting) GetLoginSettings() []string {
+	connects := config.Config.Web.Connects
+	log.Println(connects)
+	if len(connects) == 0 {
+		return nil
+	}
+	connectSettings := make(map[string][]string)
+	connectSettingKeys := make([]string, 0)
+	for _, connect := range connects {
+		settingKeys := make([]string, 0)
+		switch connect {
+		case model.ConnectTypeAlipay:
+			settingKeys = model.AlipaySettingModel.Keys()
+		case model.ConnectTypeBaidu:
+			settingKeys = model.BaiduSettingModel.Keys()
+		case model.ConnectTypeFacebook:
+			settingKeys = model.FacebookSettingModel.Keys()
+		case model.ConnectTypeGitee:
+			settingKeys = model.GiteeSettingModel.Keys()
+		case model.ConnectTypeGithub:
+			settingKeys = model.GithubSettingModel.Keys()
+		case model.ConnectTypeGoogle:
+			settingKeys = model.GoogleSettingModel.Keys()
+		case model.ConnectTypeLine:
+			settingKeys = model.LineSettingModel.Keys()
+		case model.ConnectTypeTwitter:
+			settingKeys = model.TwitterSettingModel.Keys()
+		case model.ConnectTypeQq:
+			settingKeys = model.QqSettingModel.Keys()
+		case model.ConnectTypeWechat:
+			settingKeys = model.WechatSettingModel.Keys()
+		case model.ConnectTypeWeibo:
+			settingKeys = model.WeiboSettingModel.Keys()
+		}
+		connectSettingKeys = append(connectSettingKeys, settingKeys...)
+		connectSettings[connect] = settingKeys
+	}
+	log.Println(connectSettingKeys)
+	connectSettingVals := service.GetSettings(connectSettingKeys)
+	available := make([]string, 0)
+	for connectType, settings := range connectSettings {
+		empty := false
+		for _, setting := range settings {
+			if connectSettingVals[setting] == "" {
+				empty = true
+				break
+			}
+		}
+		if !empty {
+			available = append(available, connectType)
+		}
+	}
+	return available
+}
 func (service Setting) GetPublicSettings() (map[string]interface{}, error) {
 	var returnData = make(map[string]interface{})
 	var data []model.Setting
@@ -65,7 +119,6 @@ func (service Setting) GetPublicSettings() (map[string]interface{}, error) {
 	for _, value := range data {
 		returnData[value.Key] = value.Value
 	}
-	returnData["connects"] = config.Config.Web.Connects
 	return returnData, nil
 }
 

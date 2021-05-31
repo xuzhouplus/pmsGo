@@ -40,6 +40,10 @@ func Router(engine *gin.Engine) {
 	{
 		//前端获取public配置
 		setting.GET("", controller.Setting.Index)
+		//获取登录互联配置
+		setting.GET("/login", controller.Setting.Login)
+		//获取登录互联配置
+		setting.GET("/connects", auth.Register(), controller.Setting.Connects)
 		//编辑页获取配置
 		setting.GET("/site", auth.Register(), controller.Setting.Site)
 		//编辑页保存配置

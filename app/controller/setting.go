@@ -30,6 +30,15 @@ func (setting setting) Index(c *gin.Context) {
 	c.JSON(http.StatusOK, returnData)
 }
 
+func (setting setting) Login(ctx *gin.Context) {
+	loginSettings := service.SettingService.GetLoginSettings()
+	ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, loginSettings, "获取成功"))
+}
+
+func (setting setting) Connects(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, config.Config.Web.Connects, "获取成功"))
+}
+
 func (setting setting) Site(ctx *gin.Context) {
 	if ctx.Request.Method == "GET" {
 		result := service.SettingService.Find(model.SiteSettingModel.Keys(), "key")
