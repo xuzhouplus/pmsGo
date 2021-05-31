@@ -19,7 +19,7 @@ func Init() {
 		SkipDefaultTransaction: true,
 	})
 	if err != nil {
-		fmt.Printf("unable to connect to database:%err \n", err)
+		panic(fmt.Sprintf("unable to connect to database:%err \n", err))
 	}
 	if config.Config.Site.Debug {
 		DB = db.Debug()

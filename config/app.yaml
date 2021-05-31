@@ -1,14 +1,14 @@
 site:
   name: pmsGo #站点名称
   maintain: false #是否开启维护
-  debug: true
+  debug: false
   port: 8080
   cors: true
 
 database:
-  host: 127.0.0.1:33060
-  username: homestead
-  password: secret
+  host: 127.0.0.1:3306
+  username: root
+  password: root
   database: pms
   charset: utf8mb4
   prefix: pms_
@@ -29,15 +29,15 @@ web:
   security:
     primaryKey: "config\\rsa_1024_priv.pem"
     salt: "xcvmnbiufs"
-  host: "http://web.pms.test"
+  host: "http://www.xuzhou.cool"
   connects: [ alipay,github,baidu,gitee ]
   auth:
     admin:
       except: [ ]
       optional: [ login,auth,logout,authorize,zuthorize-url,callback,authorize-user ]
   upload:
-    path: "D:\\GoCode\\src\\pmsGo\\public\\upload"
-    url: "http://web.pms.test/go/public/upload"
+    path: "\\usr\\www\\pmsGo\\public\\upload"
+    url: "http://www.xuzhou.cool/go/public/upload"
     extensions: [ "*" ] #支持文件后缀
     maxSize: "1024M" #最大单个文件大小
     maxFiles: 10 #最大文件数量

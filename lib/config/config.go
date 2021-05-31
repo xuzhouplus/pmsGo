@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
 )
 
 type config struct {
@@ -20,18 +22,18 @@ var Config = &config{}
 func init() {
 	pwd, error := os.Getwd()
 	if error != nil {
-		fmt.Println(error)
-		return
+		panic(error)
 	}
-	file, error := ioutil.ReadFile(pwd + "\\config\\app.yaml")
+	dirSep := string(filepath.Separator)
+	cfgFile := pwd + dirSep + "config" + dirSep + "app.yaml"
+	log.Println(fmt.Sprintf("Load config file:%v", cfgFile))
+	file, error := ioutil.ReadFile(cfgFile)
 	if error != nil {
-		fmt.Printf("Can`t read config image:%err\n", error)
-		return
+		panic(fmt.Sprintf("Can`t read config file:%err\n", error))
 	}
 
 	error = yaml.Unmarshal(file, Config)
 	if error != nil {
-		fmt.Errorf("Can`t analyse config image:%err\n", error)
+		panic(fmt.Sprintf("Can`t analyse config file:%err\n", error))
 	}
-
 }

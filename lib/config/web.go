@@ -8,7 +8,7 @@ type Upload struct {
 	Path       string   `yaml:"path"`
 	Url        string   `yaml:"url"`
 	Extensions []string `yaml:"extensions"`
-	MaxSize    []string `yaml:"maxSize"`
+	MaxSize    string   `yaml:"maxSize"`
 	MaxFiles   int      `yaml:"maxFiles"`
 	MimeTypes  []string `yaml:"mimeTypes"`
 }
