@@ -2,10 +2,8 @@ package service
 
 import (
 	"errors"
-	"log"
 	"pmsGo/app/model"
 	"pmsGo/lib/config"
-	"pmsGo/lib/database"
 	"pmsGo/lib/helper"
 	"reflect"
 	"strconv"
@@ -15,12 +13,13 @@ type Setting struct {
 	Settings map[string]string
 }
 
-var SettingService = &Setting{}
-var Settings map[string]string
+var SettingService = NewSettingService()
 
-func (service *Setting) Load() {
+func NewSettingService() *Setting {
+	service := &Setting{}
+	settingModel := &model.Setting{}
 	var data []model.Setting
-	result := database.Query(&model.Setting{}).Find(&data)
+	result := settingModel.DB().Find(&data)
 	if result.Error != nil {
 		panic(result.Error)
 	}
@@ -29,7 +28,9 @@ func (service *Setting) Load() {
 		settings[value.Key] = value.Value
 	}
 	service.Settings = settings
+	return service
 }
+
 func (service Setting) UnsafeSettings() []string {
 	return []string{
 		model.SettingKeyBaiduSecretKey,
@@ -57,7 +58,6 @@ func (service Setting) IsUnsafeSetting(settingKey string) bool {
 }
 func (service Setting) GetLoginSettings() []string {
 	connects := config.Config.Web.Connects
-	log.Println(connects)
 	if len(connects) == 0 {
 		return nil
 	}
@@ -92,7 +92,6 @@ func (service Setting) GetLoginSettings() []string {
 		connectSettingKeys = append(connectSettingKeys, settingKeys...)
 		connectSettings[connect] = settingKeys
 	}
-	log.Println(connectSettingKeys)
 	connectSettingVals := service.GetSettings(connectSettingKeys)
 	available := make([]string, 0)
 	for connectType, settings := range connectSettings {
@@ -112,7 +111,8 @@ func (service Setting) GetLoginSettings() []string {
 func (service Setting) GetPublicSettings() (map[string]interface{}, error) {
 	var returnData = make(map[string]interface{})
 	var data []model.Setting
-	result := database.Query(&model.Setting{}).Where("private != ?", model.SettingTypeIsPrivate).Find(&data)
+	settingModel := &model.Setting{}
+	result := settingModel.DB().Where("private != ?", model.SettingTypeIsPrivate).Find(&data)
 	if result.Error != nil {
 		return nil, errors.New("获取配置失败")
 	}
@@ -126,12 +126,12 @@ func (service Setting) GetSetting(key string) string {
 	if service.Settings != nil {
 		return service.Settings[key]
 	}
-	var record model.Setting
-	result := database.Query(&model.Setting{}).Where("`key` = ?", key).Limit(1).Take(&record)
+	settingModel := &model.Setting{}
+	result := settingModel.DB().Where("`key` = ?", key).Limit(1).Take(&settingModel)
 	if result.Error != nil {
 		return ""
 	}
-	return record.Value
+	return settingModel.Value
 }
 func (service *Setting) SetSetting(key string, value string) {
 	if service.Settings == nil {
@@ -148,7 +148,8 @@ func (service Setting) GetSettings(keys []string) map[string]string {
 		return ret
 	}
 	var data []model.Setting
-	query := database.Query(&model.Setting{}).Select("key", "value")
+	settingModel := &model.Setting{}
+	query := settingModel.DB().Select("key", "value")
 	if len(keys) > 0 {
 		query.Where("`key` IN (?)", keys).Limit(len(keys))
 	}
@@ -166,7 +167,8 @@ func (service Setting) GetSettings(keys []string) map[string]string {
 }
 func (service Setting) Find(keys []string, indexBy string) map[string]model.Setting {
 	var data []model.Setting
-	result := database.Query(&model.Setting{}).Where("`key` IN ?", keys).Limit(len(keys)).Find(&data)
+	settingModel := &model.Setting{}
+	result := settingModel.DB().Where("`key` IN ?", keys).Limit(len(keys)).Find(&data)
 	if result.Error != nil {
 		return nil
 	}
@@ -183,12 +185,13 @@ func (service Setting) Find(keys []string, indexBy string) map[string]model.Sett
 }
 
 func (service *Setting) Save(keyPairs map[string]interface{}) error {
-	connect := database.DB.Begin()
+	settingModel := &model.Setting{}
+	connect := settingModel.DB().Begin()
 	for key, value := range keyPairs {
 		if value == "" && service.IsUnsafeSetting(key) {
 			continue
 		}
-		result := connect.Model(&model.Setting{}).Where("`key` = ?", key).Update("value", value)
+		result := settingModel.DB().Where("`key` = ?", key).Update("value", value)
 		if result.Error != nil {
 			connect.Rollback()
 			return result.Error

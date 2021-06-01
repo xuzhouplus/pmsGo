@@ -3,13 +3,19 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"pmsGo/app/controller"
+	"pmsGo/lib/config"
 	"pmsGo/middleware/auth"
+	"pmsGo/middleware/cors"
 	"pmsGo/middleware/session"
 )
 
 func Router(engine *gin.Engine) {
 	//支持上传文件的支持
 	engine.Static("/public", "./public")
+	//根据配置进行设置跨域
+	if config.Config.Site.Debug {
+		engine.Use(cors.Register())
+	}
 	//注册session组件
 	engine.Use(session.Register())
 	//账号路由分组

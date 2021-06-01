@@ -5,6 +5,6 @@ type database struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 	Database string `yaml:"database"`
-	Charset string `yaml:"charset"`
+	Charset  string `yaml:"charset"`
 	Prefix   string `yaml:"prefix"`
 }

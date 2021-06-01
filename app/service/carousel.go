@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"pmsGo/app/model"
-	"pmsGo/lib/database"
 	"pmsGo/lib/helper/image"
 	"pmsGo/lib/security/random"
 	"strconv"
@@ -16,30 +15,25 @@ var CarouselService = &Carousel{}
 
 func (service Carousel) List(page interface{}, size interface{}, fields interface{}, like interface{}, order interface{}) ([]model.Carousel, error) {
 	var carousels []model.Carousel
-
-	connect := database.Query(&model.Carousel{})
-
+	carouselModel := &model.Carousel{}
+	connect := carouselModel.DB()
 	if size != nil {
 		connect.Limit(size.(int))
 	}
-
 	if page != nil {
 		connect.Offset(page.(int) * size.(int))
 	}
-
 	if fields != nil {
 		connect.Select(fields)
 	}
 	if like != nil {
 		connect.Where("title like ?", like.(string))
 	}
-
 	if order != nil {
 		for field, sort := range order.(map[string]string) {
 			connect.Order("`" + field + "` " + sort)
 		}
 	}
-
 	if connect.Find(&carousels).Error != nil {
 		return carousels, errors.New("获取轮播图列表失败")
 	}
@@ -52,7 +46,8 @@ func (service Carousel) List(page interface{}, size interface{}, fields interfac
 }
 func (service Carousel) Create(fileId int, title string, description string, link string, order int) (*model.Carousel, error) {
 	carouselLimit, _ := strconv.Atoi(SettingService.GetSetting(model.SettingKeyCarouselLimit))
-	connect := database.Query(&model.Carousel{})
+	carouselModel := &model.Carousel{}
+	connect := carouselModel.DB()
 	var count int64
 	result := connect.Count(&count)
 	if result.Error != nil {
@@ -117,7 +112,7 @@ func (service Carousel) Preview(fileId int) (string, error) {
 
 func (service Carousel) Delete(id int) error {
 	carousel := &model.Carousel{}
-	connect := database.Query(&model.Carousel{})
+	connect := carousel.DB()
 	connect.Where("id = ?", id)
 	connect.Limit(1)
 	result := connect.Find(&carousel)

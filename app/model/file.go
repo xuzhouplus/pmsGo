@@ -1,6 +1,8 @@
 package model
 
 import (
+	"gorm.io/gorm"
+	"pmsGo/lib/database"
 	"pmsGo/lib/helper/image"
 )
 
@@ -16,6 +18,9 @@ type File struct {
 	Preview     string `json:"preview"`
 }
 
+func (model File) DB() *gorm.DB {
+	return database.DB.Model(&model)
+}
 func (model File) RemoveFile() error {
 	return image.Remove(image.FullPath(model.Path))
 }
@@ -25,4 +30,3 @@ func (model File) RemoveThumb() error {
 func (model File) RemovePreview() error {
 	return image.Remove(image.FullPath(model.Preview))
 }
-

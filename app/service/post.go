@@ -5,7 +5,6 @@ import (
 	"gorm.io/gorm"
 	"math"
 	"pmsGo/app/model"
-	"pmsGo/lib/database"
 	"pmsGo/lib/security/random"
 )
 
@@ -16,7 +15,8 @@ var PostService = &Post{}
 
 func (service Post) List(page int, size int, fields []string, like string, enable int, order map[string]string) (map[string]interface{}, error) {
 	var posts []model.Post
-	connect := database.Query(&model.Post{})
+	postModel := &model.Post{}
+	connect := postModel.DB()
 	if fields != nil {
 		connect.Select(fields)
 	}
@@ -62,7 +62,7 @@ func (service Post) List(page int, size int, fields []string, like string, enabl
 }
 func (service Post) FindOneById(id int) (*model.Post, error) {
 	one := &model.Post{}
-	connect := database.Query(&model.Post{})
+	connect := one.DB()
 	connect.Where("id = ?", id)
 	connect.Limit(1)
 	result := connect.First(&one)
@@ -73,7 +73,7 @@ func (service Post) FindOneById(id int) (*model.Post, error) {
 }
 func (service Post) FindOneByUuid(uuid string) (*model.Post, error) {
 	one := &model.Post{}
-	connect := database.Query(&model.Post{})
+	connect := one.DB()
 	connect.Where("uuid = ?", uuid)
 	connect.Limit(1)
 	result := connect.First(&one)
@@ -105,7 +105,7 @@ func (service Post) Save(postData map[string]interface{}) (*model.Post, error) {
 		newRecord = true
 		data.Uuid = random.Uuid(false)
 	}
-	connect := database.Query(&model.Post{})
+	connect := data.DB()
 	var result *gorm.DB
 	if newRecord {
 		result = connect.Create(&data)
@@ -122,7 +122,7 @@ func (service Post) Delete(id int) error {
 	if post == nil {
 		return errors.New("post not exists")
 	}
-	connect := database.Query(&model.Post{})
+	connect := post.DB()
 	result := connect.Where("id = ?", post.ID).Delete(&post)
 	if result.Error != nil {
 		return result.Error

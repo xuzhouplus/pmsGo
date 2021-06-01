@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"pmsGo/app/model"
-	"pmsGo/lib/database"
 	"pmsGo/lib/oauth/user"
 	"pmsGo/lib/security/rsa"
 )
@@ -17,7 +16,7 @@ var AdminService = &Admin{}
 
 func (service Admin) FindOneByAccount(account string, status int) (*model.Admin, error) {
 	admin := &model.Admin{}
-	connect := database.Query(&model.Admin{})
+	connect := admin.DB()
 	connect.Where("account = ?", account)
 	if status != 0 {
 		connect.Where("status = ?", status)
@@ -32,7 +31,7 @@ func (service Admin) FindOneByAccount(account string, status int) (*model.Admin,
 
 func (service Admin) FindOneByUuid(uuid string, status int) (*model.Admin, error) {
 	admin := &model.Admin{}
-	connect := database.Query(&model.Admin{})
+	connect := admin.DB()
 	connect.Where("uuid = ?", uuid)
 	if status != 0 {
 		connect.Where("status = ?", status)
@@ -47,7 +46,7 @@ func (service Admin) FindOneByUuid(uuid string, status int) (*model.Admin, error
 
 func (service Admin) FindOneById(id int, status int) (*model.Admin, error) {
 	admin := &model.Admin{}
-	connect := database.Query(&model.Admin{})
+	connect := admin.DB()
 	connect.Where("id = ?", id)
 	if status != 0 {
 		connect.Where("status = ?", status)
@@ -102,8 +101,7 @@ func (service Admin) Update(postData map[string]interface{}) (*model.Admin, erro
 		admin.SetPassword(password)
 	}
 	admin.Status = int(postData["status"].(float64))
-	connect := database.Query(&model.Admin{})
-	result := connect.Where("uuid = ?", admin.Uuid).Save(&admin)
+	result := admin.DB().Save(&admin)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -119,7 +117,7 @@ func (service Admin) GetBoundConnects(account string) ([]model.Connect, error) {
 		return nil, errors.New("账号不存在")
 	}
 	var connects []model.Connect
-	connect := database.Query(&model.Connect{})
+	connect := admin.DB()
 	result := connect.Where("admin_id = ?", admin.ID).Find(&connects)
 	if result.Error != nil {
 		return nil, result.Error
@@ -129,7 +127,7 @@ func (service Admin) GetBoundConnects(account string) ([]model.Connect, error) {
 
 func (service Admin) Bind(adminId int, authAccount *user.User) (*model.Connect, error) {
 	connect := &model.Connect{}
-	query := database.Query(&model.Connect{})
+	query := connect.DB()
 	result := query.Where("union_id = ?", authAccount.OpenId).Limit(1).Find(&connect)
 	if result != nil {
 		admin, err := service.FindOneById(connect.AdminId, model.AdminStatusEnabled)
@@ -155,7 +153,7 @@ func (service Admin) Bind(adminId int, authAccount *user.User) (*model.Connect, 
 
 func (service Admin) Auth(authAccount *user.User) (*model.Admin, error) {
 	connect := &model.Connect{}
-	query := database.Query(&model.Connect{})
+	query := connect.DB()
 	result := query.Where("union_id = ?", authAccount.OpenId).Where("status = ?", model.ConnectStatusEnable).Limit(1).Find(&connect)
 	if result.Error != nil {
 		return nil, result.Error

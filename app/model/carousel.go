@@ -1,6 +1,7 @@
 package model
 
 import (
+	"gorm.io/gorm"
 	"pmsGo/lib/database"
 )
 
@@ -17,6 +18,10 @@ type Carousel struct {
 	Order       int    `json:"order"`
 	Thumb       string `json:"thumb"`
 	Link        string `json:"link"`
+}
+
+func (model Carousel) DB() *gorm.DB {
+	return database.DB.Model(&model)
 }
 
 func (model *Carousel) SetOrder(order interface{}) error {

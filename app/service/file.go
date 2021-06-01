@@ -4,7 +4,6 @@ import (
 	"errors"
 	"math"
 	"pmsGo/app/model"
-	"pmsGo/lib/database"
 	"pmsGo/lib/helper/image"
 )
 
@@ -15,7 +14,8 @@ var FileService = &File{}
 
 func (service File) List(page int, limit int, fields []string, fileType string, name string) (map[string]interface{}, error) {
 	var files []model.File
-	connect := database.Query(&model.File{})
+	fileModel := &model.File{}
+	connect := fileModel.DB()
 	if len(fields) > 0 {
 		connect.Select(fields)
 	}
@@ -101,7 +101,7 @@ func (service File) Upload(uploaded *image.Instance, name string, description st
 			close(channel)
 		}
 	}
-	connect := database.Query(&model.File{})
+	connect := file.DB()
 	result := connect.Create(&file)
 	if result.Error != nil {
 		return nil, result.Error
@@ -111,7 +111,7 @@ func (service File) Upload(uploaded *image.Instance, name string, description st
 
 func (service File) FindOne(id int) (*model.File, error) {
 	one := &model.File{}
-	connect := database.Query(&model.File{})
+	connect := one.DB()
 	connect.Where("id = ?", id)
 	connect.Limit(1)
 	err := connect.Find(&one).Error
@@ -122,7 +122,7 @@ func (service File) FindOne(id int) (*model.File, error) {
 }
 func (service File) Delete(id int) error {
 	var one model.File
-	connect := database.Query(&model.File{})
+	connect := one.DB()
 	connect.Where("id = ?", id)
 	connect.Limit(1)
 	err := connect.Find(&one).Error

@@ -1,14 +1,14 @@
 site:
   name: pmsGo #站点名称
   maintain: false #是否开启维护
-  debug: false
+  debug: true
   port: 8080
   cors: true
 
 database:
-  host: 127.0.0.1:3306
-  username: root
-  password: root
+  host: 127.0.0.1:33060
+  username: homestead
+  password: secret
   database: pms
   charset: utf8mb4
   prefix: pms_
@@ -18,11 +18,12 @@ redis:
   port: 6379
   auth: ""
   prefix: "pms:"
+  expire: 1800
 
 session:
   name: pms_server
   secret: qwerty
-  type: redis
+  type: cache
   idle: 10
 
 web:

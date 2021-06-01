@@ -1,6 +1,7 @@
 package model
 
 import (
+	"gorm.io/gorm"
 	"pmsGo/lib/database"
 	"time"
 )
@@ -23,7 +24,9 @@ const (
 	PostStatusDisable = 2
 )
 
-var PostModel = &Post{}
+func (model Post) DB() *gorm.DB {
+	return database.DB.Model(&model)
+}
 
 func (model *Post) Toggle() error {
 	if model.Status == PostStatusEnable {

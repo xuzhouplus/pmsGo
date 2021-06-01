@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"log"
 	"pmsGo/lib/database"
 	"pmsGo/lib/security/md5"
@@ -16,7 +17,6 @@ const (
 )
 
 type Admin struct {
-	database.Model
 	ID        uint      `gorm:"primarykey" json:"id"`
 	Uuid      string    `gorm:"unique" json:"uuid"`
 	Type      string    `json:"type"`
@@ -27,6 +27,10 @@ type Admin struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Salt      string    `json:"_"`
+}
+
+func (model Admin) DB() *gorm.DB {
+	return database.DB.Model(&model)
 }
 
 func (model Admin) ValidatePassword(inputPassword string) (bool, error) {

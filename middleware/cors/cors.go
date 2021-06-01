@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
-// 允许跨域
-func Next() gin.HandlerFunc {
+// Register 允许跨域
+func Register() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		method := c.Request.Method
 		c.Header("Access-Control-Allow-Origin", "*")

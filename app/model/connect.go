@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"gorm.io/gorm"
+	"pmsGo/lib/database"
+	"time"
+)
 
 const (
 	ConnectStatusEnable  = 1
@@ -31,4 +35,8 @@ type Connect struct {
 	Status    int       `json:"status"`
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+}
+
+func (model Connect) DB() *gorm.DB {
+	return database.DB.Model(&model)
 }

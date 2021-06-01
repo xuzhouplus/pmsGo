@@ -9,6 +9,6 @@ import (
 func Middleware(engine *gin.Engine) {
 	//根据配置进行设置跨域
 	if config.Config.Site.Debug {
-		engine.Use(cors.Next())
+		engine.Use(cors.Register())
 	}
 }
