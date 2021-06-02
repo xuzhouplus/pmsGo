@@ -26,7 +26,7 @@ func (service Carousel) List(page interface{}, size interface{}, fields interfac
 	if fields != nil {
 		connect.Select(fields)
 	}
-	if like != nil {
+	if like != nil && like != "" {
 		connect.Where("title like ?", like.(string))
 	}
 	if order != nil {

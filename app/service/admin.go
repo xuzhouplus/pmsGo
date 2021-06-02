@@ -117,7 +117,8 @@ func (service Admin) GetBoundConnects(account string) ([]model.Connect, error) {
 		return nil, errors.New("账号不存在")
 	}
 	var connects []model.Connect
-	connect := admin.DB()
+	connectModel := &model.Connect{}
+	connect := connectModel.DB()
 	result := connect.Where("admin_id = ?", admin.ID).Find(&connects)
 	if result.Error != nil {
 		return nil, result.Error

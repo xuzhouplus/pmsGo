@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pmsGo/app/model"
 	"pmsGo/app/service"
 	"pmsGo/lib/controller"
 	"pmsGo/lib/helper/image"
+	"pmsGo/lib/log"
 	"strconv"
 )
 
@@ -18,14 +18,12 @@ type carousel struct {
 var Carousel = &carousel{}
 
 func (controller carousel) Index(ctx *gin.Context) {
-	requestData := make(map[string]interface{})
-	err := ctx.ShouldBind(&requestData)
+	fields, _ := ctx.GetQueryArray("fields")
+	like, _ := ctx.GetQuery("like")
+	order, _ := ctx.GetQueryMap("order")
+	result, err := service.CarouselService.List(0, 0, fields, like, order)
 	if err != nil {
-		ctx.JSON(http.StatusOK, controller.Response(controller.CodeFail(), nil, err.Error()))
-		return
-	}
-	result, err := service.CarouselService.List(0, 0, requestData["fields"], requestData["like"], requestData["order"])
-	if err != nil {
+		log.Error(err)
 		ctx.JSON(http.StatusOK, controller.Response(controller.CodeFail(), nil, err.Error()))
 	} else {
 		ctx.JSON(http.StatusOK, controller.Response(controller.CodeOk(), result, "获取轮播图列表成功"))
@@ -40,7 +38,6 @@ func (controller carousel) List(ctx *gin.Context) {
 		data := make(map[string]interface{})
 		data["list"] = list
 		carouselLimit, _ := strconv.Atoi(service.SettingService.GetSetting(model.SettingKeyCarouselLimit))
-		fmt.Println(carouselLimit)
 		data["limit"] = carouselLimit
 		ctx.JSON(http.StatusOK, controller.Response(controller.CodeOk(), data, "获取轮播图列表成功"))
 	}
