@@ -17,11 +17,14 @@ redis:
   host: 127.0.0.1
   port: 6379
   auth: ""
-  prefix: "pms:"
+
+cache:
+  prefix: "pms:cache:"
   expire: 1800
 
 session:
   name: pms_server
+  prefix: "pms:session"
   secret: qwerty
   type: cache
   idle: 10

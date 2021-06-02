@@ -8,7 +8,11 @@ import (
 	"strconv"
 )
 
+// Register 注册session中间件
 func Register() gin.HandlerFunc {
+	//创建redis连接
 	store, _ := redis.NewStoreWithDB(config.Config.Session.Idle, "tcp", config.Config.Redis.Host+":"+strconv.Itoa(config.Config.Redis.Port), config.Config.Redis.Auth, strconv.Itoa(config.Config.Redis.Database), []byte(config.Config.Session.Secret))
+	redis.SetKeyPrefix(store, config.Config.Session.Prefix)
+	//配置session存储为redis
 	return sessions.Sessions(config.Config.Session.Name, store)
 }

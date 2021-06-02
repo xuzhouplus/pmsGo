@@ -31,8 +31,8 @@ func init() {
 			return json.Unmarshal(bytes, i)
 		},
 	})
-	Prefix = config.Config.Redis.Prefix
-	Expire = config.Config.Redis.Expire
+	Prefix = config.Config.Cache.Prefix
+	Expire = config.Config.Cache.Expire
 }
 
 func Key(key string) string {

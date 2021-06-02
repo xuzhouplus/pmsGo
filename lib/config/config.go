@@ -12,6 +12,7 @@ type config struct {
 	Site     site
 	Database database
 	Redis    redis
+	Cache    cache
 	Session  session
 	Log      log
 	Web      Web

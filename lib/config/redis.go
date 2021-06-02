@@ -5,6 +5,4 @@ type redis struct {
 	Port     int    `yaml:"port"`
 	Auth     string `yaml:"auth"`
 	Database int    `yaml:"database"`
-	Prefix   string `yaml:"prefix"`
-	Expire   int    `yaml:"expire"`
 }
