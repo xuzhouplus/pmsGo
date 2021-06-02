@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -14,6 +13,7 @@ type config struct {
 	Database database
 	Redis    redis
 	Session  session
+	Log      log
 	Web      Web
 }
 
@@ -26,7 +26,6 @@ func init() {
 	}
 	dirSep := string(filepath.Separator)
 	cfgFile := pwd + dirSep + "config" + dirSep + "app.yaml"
-	log.Println(fmt.Sprintf("Load config file:%v", cfgFile))
 	file, error := ioutil.ReadFile(cfgFile)
 	if error != nil {
 		panic(fmt.Sprintf("Can`t read config file:%err\n", error))

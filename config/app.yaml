@@ -26,6 +26,11 @@ session:
   type: cache
   idle: 10
 
+log:
+  file: app.log
+  level: debug
+  json: false
+
 web:
   security:
     primaryKey: "config\\rsa_1024_priv.pem"
@@ -35,7 +40,7 @@ web:
   auth:
     admin:
       except: [ ]
-      optional: [ login,auth,logout,authorize,zuthorize-url,callback,authorize-user ]
+      optional: [ login,auth,logout,authorize,authorize-url,callback,authorize-user ]
   upload:
     path: "\\usr\\www\\pmsGo\\public\\upload"
     url: "http://www.xuzhou.cool/go/public/upload"

@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
@@ -9,41 +10,39 @@ import (
 	"time"
 )
 
-type redisCache struct {
-	Prefix string
-	Expire int
-	Redis  *redis.Client
-	Cache  *cache.Cache
-}
-
-var Cache *redisCache
+var Prefix string
+var Expire int
+var Redis *redis.Client
+var Cache *cache.Cache
 
 func init() {
-	redisClient := redis.NewClient(&redis.Options{
+	Redis = redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%v:%v", config.Config.Redis.Host, config.Config.Redis.Port),
 		Password: config.Config.Redis.Auth,
 		DB:       config.Config.Redis.Database,
 	})
-	cacheClient := cache.New(&cache.Options{
-		Redis:      redisClient,
+	Cache = cache.New(&cache.Options{
+		Redis:      Redis,
 		LocalCache: cache.NewTinyLFU(1000, time.Minute),
+		Marshal: func(i interface{}) ([]byte, error) {
+			return json.Marshal(i)
+		},
+		Unmarshal: func(bytes []byte, i interface{}) error {
+			return json.Unmarshal(bytes, i)
+		},
 	})
-	Cache = &redisCache{
-		Prefix: config.Config.Redis.Prefix,
-		Expire: config.Config.Redis.Expire,
-		Redis:  redisClient,
-		Cache:  cacheClient,
-	}
+	Prefix = config.Config.Redis.Prefix
+	Expire = config.Config.Redis.Expire
 }
 
-func (rc redisCache) Key(key string) string {
-	return rc.Prefix + key
+func Key(key string) string {
+	return Prefix + key
 }
 
-func (rc redisCache) Get(key string) (interface{}, error) {
-	key = rc.Key(key)
+func Get(key string) (interface{}, error) {
+	key = Key(key)
 	var val interface{}
-	error := rc.Cache.Get(context.Background(), key, &val)
+	error := Cache.Get(context.Background(), key, &val)
 	if error == redis.Nil {
 		return nil, nil
 	} else if error != nil {
@@ -52,22 +51,29 @@ func (rc redisCache) Get(key string) (interface{}, error) {
 	return val, nil
 }
 
-func (rc redisCache) Set(key string, value interface{}) error {
-	key = rc.Key(key)
-	err := rc.Cache.Set(&cache.Item{
+func Set(key string, value interface{}, ttl int) error {
+	key = Key(key)
+	item := &cache.Item{
 		Ctx:   context.Background(),
 		Key:   key,
 		Value: value,
-	})
+	}
+	if ttl == 0 {
+		ttl = Expire
+	}
+	if ttl > 0 {
+		item.TTL = time.Duration(ttl)
+	}
+	err := Cache.Set(item)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (rc redisCache) SetNX(key string, value interface{}, ttl int) error {
-	key = rc.Key(key)
-	err := rc.Cache.Set(&cache.Item{
+func SetNX(key string, value interface{}, ttl int) error {
+	key = Key(key)
+	err := Cache.Set(&cache.Item{
 		Ctx:   context.Background(),
 		Key:   key,
 		Value: value,
@@ -80,12 +86,12 @@ func (rc redisCache) SetNX(key string, value interface{}, ttl int) error {
 	return nil
 }
 
-func (rc redisCache) SetEX(key string, value interface{}, ttl int) error {
-	key = rc.Key(key)
+func SetEX(key string, value interface{}, ttl int) error {
+	key = Key(key)
 	if ttl == 0 {
-		ttl = rc.Expire
+		ttl = Expire
 	}
-	err := rc.Cache.Set(&cache.Item{
+	err := Cache.Set(&cache.Item{
 		Ctx:   context.Background(),
 		Key:   key,
 		Value: value,

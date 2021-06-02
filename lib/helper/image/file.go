@@ -3,10 +3,10 @@ package image
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"pmsGo/lib/config"
+	"pmsGo/lib/log"
 	"strconv"
 	"strings"
 )
@@ -40,7 +40,7 @@ func init() {
 	for _, mimeType := range mimeTypes {
 		Settings.mimeTypes = append(Settings.mimeTypes, mimeType)
 	}
-	log.Printf("Upload: %v \n", Settings)
+	log.Debugf("Upload: %v \n", Settings)
 }
 
 func Remove(fullPath string) error {
@@ -51,7 +51,7 @@ func Remove(fullPath string) error {
 	filePath := string(path)
 	_, err := os.Stat(filePath)
 	if err != nil {
-		log.Printf(err.Error())
+		log.Debugf(err.Error())
 		return nil
 	}
 	err = os.Remove(filePath)
@@ -177,7 +177,7 @@ func sizeToBytes(sizeSetting interface{}) int64 {
 		sizeStr = sizeStr[:strLen-1]
 		sizeInt, err := strconv.Atoi(sizeStr)
 		if err != nil {
-			log.Printf("Unable to covert max size:%v %e", sizeSetting, err)
+			log.Errorf("Unable to covert max size:%v %e", sizeSetting, err)
 			return 0
 		}
 		return int64(sizeInt * strategy)

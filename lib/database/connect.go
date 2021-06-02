@@ -6,6 +6,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"pmsGo/lib/config"
+	"pmsGo/lib/log"
+	"time"
 )
 
 var DB *gorm.DB
@@ -19,11 +21,26 @@ func init() {
 		SkipDefaultTransaction: true,
 	})
 	if err != nil {
-		panic(fmt.Sprintf("unable to connect to database:%err \n", err))
+		log.Panicf("unable to connect to database:%err \n", err)
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Panicf("init db connect failed:%err", err)
+	}
+	if config.Config.Database.MaxIdleConnect > 0 {
+		sqlDB.SetMaxIdleConns(config.Config.Database.MaxIdleConnect)
+	}
+	if config.Config.Database.MaxOpenConnect > 0 {
+		sqlDB.SetMaxOpenConns(config.Config.Database.MaxOpenConnect)
+	}
+	if config.Config.Database.ConnMaxIdleTime > 0 {
+		sqlDB.SetConnMaxIdleTime(time.Duration(config.Config.Database.ConnMaxIdleTime))
+	}
+	if config.Config.Database.ConnMaxLifetime > 0 {
+		sqlDB.SetConnMaxLifetime(time.Duration(config.Config.Database.ConnMaxLifetime))
 	}
 	if config.Config.Site.Debug {
 		DB = db.Debug()
-
 	} else {
 		DB = db
 	}
