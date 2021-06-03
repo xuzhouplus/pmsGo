@@ -6,7 +6,7 @@ import (
 	"pmsGo/app/model"
 	"pmsGo/app/service"
 	"pmsGo/lib/controller"
-	"pmsGo/lib/helper/image"
+	"pmsGo/lib/image"
 	"pmsGo/lib/log"
 	"strconv"
 )

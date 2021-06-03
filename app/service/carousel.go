@@ -3,7 +3,7 @@ package service
 import (
 	"errors"
 	"pmsGo/app/model"
-	"pmsGo/lib/helper/image"
+	"pmsGo/lib/image"
 	"pmsGo/lib/security/random"
 	"strconv"
 )
@@ -66,11 +66,11 @@ func (service Carousel) Create(fileId int, title string, description string, lin
 	carousel.Title = title
 	carousel.Description = description
 	carousel.Order = order
-	file, err := image.Open(image.FullPath(one.Path))
+	srcImage, err := image.Open(image.FullPath(one.Path))
 	if err != nil {
 		return nil, err
 	}
-	carouselFile, err := file.CreateCarousel(1920, 1080, "jpg")
+	carouselFile, err := srcImage.CreateCarousel(1920, 1080, "jpg")
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,11 @@ func (service Carousel) Delete(id int) error {
 	if result.Error != nil {
 		return result.Error
 	}
-	err := image.Remove(image.FullPath(carousel.Thumb))
+	err := image.Remove(image.FullPath(carousel.Url))
+	if err != nil {
+		return err
+	}
+	err = image.Remove(image.FullPath(carousel.Thumb))
 	if err != nil {
 		return err
 	}

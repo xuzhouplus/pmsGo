@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"pmsGo/app/service"
 	"pmsGo/lib/controller"
-	"pmsGo/lib/helper/image"
+	"pmsGo/lib/image"
 	"strconv"
 )
 
@@ -32,7 +32,7 @@ func (cto file) Index(ctx *gin.Context) {
 }
 
 func (cto file) Upload(ctx *gin.Context) {
-	upload, err := image.Upload(ctx, "file", "/image")
+	upload, err := image.Upload(ctx, "image", "/image")
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 	} else {

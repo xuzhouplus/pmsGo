@@ -29,11 +29,11 @@ func init() {
 	cfgFile := pwd + dirSep + "config" + dirSep + "app.yaml"
 	file, error := ioutil.ReadFile(cfgFile)
 	if error != nil {
-		panic(fmt.Sprintf("Can`t read config file:%err\n", error))
+		panic(fmt.Sprintf("Can`t read config image:%err\n", error))
 	}
 
 	error = yaml.Unmarshal(file, Config)
 	if error != nil {
-		panic(fmt.Sprintf("Can`t analyse config file:%err\n", error))
+		panic(fmt.Sprintf("Can`t analyse config image:%err\n", error))
 	}
 }

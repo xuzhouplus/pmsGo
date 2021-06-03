@@ -9,11 +9,11 @@ import (
 	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
-	"pmsGo/lib/helper/image"
+	image2 "pmsGo/lib/image"
+	auth2 "pmsGo/lib/middleware/auth"
 	"pmsGo/lib/oauth"
 	"pmsGo/lib/oauth/gateway"
 	"pmsGo/lib/security/json"
-	"pmsGo/middleware/auth"
 )
 
 type admin struct {
@@ -22,6 +22,7 @@ type admin struct {
 
 var Admin = &admin{}
 
+// Login 账号登录
 func (ctl admin) Login(ctx *gin.Context) {
 	requestData := make(map[string]string)
 	ctx.ShouldBind(&requestData)
@@ -31,7 +32,7 @@ func (ctl admin) Login(ctx *gin.Context) {
 	} else {
 		session := sessions.Default(ctx)
 		data, _ := json.Encode(loginAdmin)
-		session.Set(auth.SessionLoginAdminKey, data)
+		session.Set(auth2.SessionLoginAdminKey, data)
 		session.Save()
 		returnAttr := make(map[string]string)
 		returnAttr["uuid"] = loginAdmin.Uuid
@@ -42,26 +43,28 @@ func (ctl admin) Login(ctx *gin.Context) {
 	}
 }
 
+// Auth 获取登录账号信息
 func (ctl admin) Auth(ctx *gin.Context) {
-	returnAttr := make(map[string]interface{})
 	loginAdmin := make(map[string]interface{})
-	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
+	loginData, _ := ctx.Get(auth2.ContextLoginAdminKey)
 	if loginData == nil {
-		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, returnAttr, "获取失败"))
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
 	}
 	loginAdmin = loginData.(map[string]interface{})
 	if loginAdmin != nil {
+		returnAttr := make(map[string]interface{})
 		returnAttr["uuid"] = loginAdmin["uuid"]
 		returnAttr["type"] = loginAdmin["type"]
 		returnAttr["avatar"] = loginAdmin["avatar"]
 		returnAttr["account"] = loginAdmin["account"]
 		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnAttr, "获取成功"))
 	} else {
-		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, returnAttr, "获取失败"))
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
 	}
 }
 
+// Logout 登录退出
 func (ctl admin) Logout(ctx *gin.Context) {
 	session := sessions.Default(ctx)
 	session.Clear()
@@ -69,9 +72,10 @@ func (ctl admin) Logout(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, nil, "退出成功"))
 }
 
+// Profile 登录账号信息编辑
 func (ctl admin) Profile(ctx *gin.Context) {
 	loginAdmin := make(map[string]interface{})
-	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
+	loginData, _ := ctx.Get(auth2.ContextLoginAdminKey)
 	if loginData == nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
@@ -92,14 +96,14 @@ func (ctl admin) Profile(ctx *gin.Context) {
 		requestData := make(map[string]interface{})
 		ctx.ShouldBind(&requestData)
 		if requestData["avatar"] != nil {
-			instance, err := image.Base64Upload(requestData["avatar"].(string), "/avatar")
+			instance, err := image2.Base64Upload(requestData["avatar"].(string), "/avatar")
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 				return
 			}
 			requestData["avatar"] = string(instance.Url())
 			if account.Avatar != "" {
-				image.Remove(string(image.UrlToPath(image.Url(account.Avatar))))
+				image2.Remove(string(image2.UrlToPath(image2.Url(account.Avatar))))
 			}
 		}
 		admin, err := service.AdminService.Update(requestData)
@@ -111,9 +115,10 @@ func (ctl admin) Profile(ctx *gin.Context) {
 	}
 }
 
+// Connects 获取登录账号绑定第三方信息
 func (ctl admin) Connects(ctx *gin.Context) {
 	loginAdmin := make(map[string]interface{})
-	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
+	loginData, _ := ctx.Get(auth2.ContextLoginAdminKey)
 	if loginData == nil {
 		ctx.JSON(http.StatusUnauthorized, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
@@ -133,6 +138,7 @@ func (ctl admin) Connects(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnData, "获取成功"))
 }
 
+// AuthorizeUrl 获取第三方oauth2授权地址
 func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	gatewayType := ctx.Query("type")
 	oauthGateway, err := oauth.NewOauth(gatewayType)
@@ -147,7 +153,7 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 		return
 	}
 	session := sessions.Default(ctx)
-	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
+	loginData, _ := ctx.Get(auth2.ContextLoginAdminKey)
 	adminId := 0
 	if loginData != nil {
 		loginAdmin := loginData.(map[string]interface{})
@@ -177,6 +183,7 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, authorizeUrl, "获取成功"))
 }
 
+// AuthorizeUser 第三方oauth2回调
 func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 	requestData := ctx.Request.URL.Query()
 	if len(requestData) == 0 {
@@ -255,7 +262,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		}
 		session := sessions.Default(ctx)
 		data, _ := json.Encode(admin)
-		session.Set(auth.SessionLoginAdminKey, data)
+		session.Set(auth2.SessionLoginAdminKey, data)
 		session.Save()
 		returnAttr := make(map[string]string)
 		returnAttr["uuid"] = admin.Uuid
@@ -264,7 +271,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		returnAttr["account"] = admin.Account
 		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnAttr, "登录成功"))
 	case "bind":
-		contextLoginAdmin, exists := ctx.Get(auth.ContextLoginAdminKey)
+		contextLoginAdmin, exists := ctx.Get(auth2.ContextLoginAdminKey)
 		if (!exists) || contextLoginAdmin == nil {
 			ctx.JSON(http.StatusUnauthorized, ctl.Response(controller.CodeOk, nil, "需要登录"))
 			return

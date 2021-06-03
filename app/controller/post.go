@@ -6,7 +6,7 @@ import (
 	"pmsGo/app/model"
 	"pmsGo/app/service"
 	"pmsGo/lib/controller"
-	fileHelper "pmsGo/lib/helper/image"
+	"pmsGo/lib/image"
 	"strconv"
 )
 
@@ -115,6 +115,6 @@ func (controller post) Detail(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, controller.Response(controller.CodeFail(), nil, err.Error()))
 		return
 	}
-	one.Cover = fileHelper.FullUrl(one.Cover)
+	one.Cover = image.FullUrl(one.Cover)
 	ctx.JSON(http.StatusOK, controller.Response(controller.CodeOk(), one, "获取稿件成功"))
 }

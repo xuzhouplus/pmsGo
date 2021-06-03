@@ -1,7 +1,8 @@
-package database
+package model
 
 import (
 	"gorm.io/gorm"
+	"pmsGo/lib/database"
 )
 
 type Model interface {
@@ -13,5 +14,5 @@ func Connect(model Model) *gorm.DB {
 }
 
 func Query(model interface{}) *gorm.DB {
-	return DB.Model(model)
+	return database.DB.Model(model)
 }

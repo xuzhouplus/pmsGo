@@ -208,6 +208,6 @@ func (img Image) CreatePreview(quality int) (*Image, error) {
 		}
 		return save, nil
 	default:
-		return nil, fmt.Errorf("unsupported file format: %v", img.MimeType)
+		return nil, fmt.Errorf("unsupported image format: %v", img.MimeType)
 	}
 }

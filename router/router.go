@@ -4,9 +4,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"pmsGo/app/controller"
 	"pmsGo/lib/config"
-	"pmsGo/middleware/auth"
-	"pmsGo/middleware/cors"
-	"pmsGo/middleware/session"
+	"pmsGo/lib/middleware/auth"
+	"pmsGo/lib/middleware/cors"
+	"pmsGo/lib/middleware/session"
 )
 
 func Router(engine *gin.Engine) {

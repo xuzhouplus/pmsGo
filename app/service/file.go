@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math"
 	"pmsGo/app/model"
-	"pmsGo/lib/helper/image"
+	"pmsGo/lib/image"
 )
 
 type File struct {
@@ -57,18 +57,18 @@ func (service File) List(page int, limit int, fields []string, fileType string, 
 	return returnData, nil
 }
 func (service File) Upload(uploaded *image.Instance, name string, description string) (*model.File, error) {
-	file := &model.File{}
-	file.Name = name
-	file.Description = description
-	file.Path = image.RelativePath(uploaded.Path())
-	file.Type = uploaded.MimeType
+	fileModel := &model.File{}
+	fileModel.Name = name
+	fileModel.Description = description
+	fileModel.Path = image.RelativePath(uploaded.Path())
+	fileModel.Type = uploaded.MimeType
 	filePath := uploaded.Path()
 	fileImage, err := image.Open(string(filePath))
 	if err != nil {
 		return nil, err
 	}
-	file.Width = fileImage.Width
-	file.Height = fileImage.Height
+	fileModel.Width = fileImage.Width
+	fileModel.Height = fileImage.Height
 	channel := make(chan map[string]string, 2)
 	go func() {
 		thumb, err := fileImage.CreateThumb(320, 180, "jpg")
@@ -93,20 +93,20 @@ func (service File) Upload(uploaded *image.Instance, name string, description st
 			return nil, errors.New(i["error"])
 		}
 		if i["preview"] != "" {
-			file.Preview = i["preview"]
+			fileModel.Preview = i["preview"]
 		} else if i["thumb"] != "" {
-			file.Thumb = i["thumb"]
+			fileModel.Thumb = i["thumb"]
 		}
-		if file.Preview != "" && file.Thumb != "" {
+		if fileModel.Preview != "" && fileModel.Thumb != "" {
 			close(channel)
 		}
 	}
-	connect := file.DB()
-	result := connect.Create(&file)
+	connect := fileModel.DB()
+	result := connect.Create(&fileModel)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return file, nil
+	return fileModel, nil
 }
 
 func (service File) FindOne(id int) (*model.File, error) {

@@ -34,7 +34,7 @@ func (model *Post) Toggle() error {
 	} else {
 		model.Status = PostStatusEnable
 	}
-	connect := database.Query(&Post{})
+	connect := model.DB()
 	result := connect.Where("id = ?", model.ID).Save(&model)
 	if result.Error != nil {
 		return result.Error

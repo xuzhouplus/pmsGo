@@ -3,7 +3,7 @@ package model
 import (
 	"gorm.io/gorm"
 	"pmsGo/lib/database"
-	"pmsGo/lib/helper/image"
+	"pmsGo/lib/image"
 )
 
 type File struct {
