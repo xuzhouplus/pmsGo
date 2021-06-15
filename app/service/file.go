@@ -20,7 +20,7 @@ func (service File) List(page int, limit int, fields []string, fileType string, 
 		connect.Select(fields)
 	}
 	if name != "" {
-		connect.Where("name like ?", name)
+		connect.Where("name like ?", "%"+name+"%")
 	}
 	if fileType != "" {
 		connect.Where("type = ?", fileType)

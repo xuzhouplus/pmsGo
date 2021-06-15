@@ -12,7 +12,10 @@ import (
 func Register() gin.HandlerFunc {
 	//创建redis连接
 	store, _ := redis.NewStoreWithDB(config.Config.Session.Idle, "tcp", config.Config.Redis.Host+":"+strconv.Itoa(config.Config.Redis.Port), config.Config.Redis.Auth, strconv.Itoa(config.Config.Redis.Database), []byte(config.Config.Session.Secret))
-	redis.SetKeyPrefix(store, config.Config.Session.Prefix)
+	err := redis.SetKeyPrefix(store, config.Config.Session.Prefix)
+	if err != nil {
+		return nil
+	}
 	//配置session存储为redis
 	return sessions.Sessions(config.Config.Session.Name, store)
 }

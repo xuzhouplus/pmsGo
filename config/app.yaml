@@ -6,15 +6,15 @@ site:
   cors: true
 
 database:
-  host: "mysql:3306"
-  username: root
-  password: root
+  host: "127.0.0.1:3306"
+  username: homestead
+  password: secret
   database: pms
   charset: utf8mb4
   prefix: pms_
 
 redis:
-  host: redis
+  host: 127.0.0.1
   port: 6379
   auth: ""
 
@@ -38,15 +38,15 @@ web:
   security:
     primaryKey: "config\\rsa_1024_priv.pem"
     salt: "xcvmnbiufs"
-  host: "http://www.xuzhou.cool"
+  host: "http://web.pms.test"
   connects: [ alipay,github,baidu,gitee ]
   auth:
     admin:
       except: [ ]
       optional: [ login,auth,logout,authorize,authorize-url,callback,authorize-user ]
   upload:
-    path: "\\usr\\www\\pmsGo\\public\\upload"
-    url: "http://www.xuzhou.cool/go/public/upload"
+    path: "D:\\GoCode\\pmsGo\\public\\upload"
+    url: "http://web.pms.test/go/public/upload"
     extensions: [ "*" ] #支持文件后缀
     maxSize: "1024M" #最大单个文件大小
     maxFiles: 10 #最大文件数量

@@ -32,7 +32,7 @@ func (cto file) Index(ctx *gin.Context) {
 }
 
 func (cto file) Upload(ctx *gin.Context) {
-	upload, err := image.Upload(ctx, "image", "/image")
+	upload, err := image.Upload(ctx, "file", "/image")
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 	} else {
@@ -41,6 +41,9 @@ func (cto file) Upload(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 			return
 		}
+		fileModel.Path = image.FullUrl(fileModel.Path)
+		fileModel.Thumb = image.FullUrl(fileModel.Thumb)
+		fileModel.Preview = image.FullUrl(fileModel.Preview)
 		ctx.JSON(http.StatusOK, cto.ResponseOk(fileModel, "success"))
 	}
 }
