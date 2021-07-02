@@ -4,11 +4,11 @@ import (
 	"errors"
 	"github.com/idoubi/goz"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 )
 
 const GiteeGatewayType = "Gitee"
@@ -43,21 +43,21 @@ type GiteeAccessTokenResponse struct {
 
 func NewGitee() (*Gitee, error) {
 	gitee := &Gitee{}
-	settings := service.SettingService.GetSettings(model.GiteeSettingModel.Keys())
+	settings := service2.SettingService.GetSettings(model2.GiteeSettingModel.Keys())
 	if settings == nil {
 		return nil, errors.New("Gitee配置获取失败")
 	}
-	gitee.GiteeAppId = settings[model.SettingKeyGiteeAppId]
+	gitee.GiteeAppId = settings[model2.SettingKeyGiteeAppId]
 	if gitee.GiteeAppId == "" {
-		return nil, errors.New("缺少配置:" + model.SettingKeyGiteeAppId)
+		return nil, errors.New("缺少配置:" + model2.SettingKeyGiteeAppId)
 	}
-	gitee.GiteeApplicationName = settings[model.SettingKeyGiteeApplicationName]
+	gitee.GiteeApplicationName = settings[model2.SettingKeyGiteeApplicationName]
 	if gitee.GiteeApplicationName == "" {
-		return nil, errors.New("缺少配置:" + model.SettingKeyGiteeApplicationName)
+		return nil, errors.New("缺少配置:" + model2.SettingKeyGiteeApplicationName)
 	}
-	secret := settings[model.SettingKeyGiteeAppSecret]
+	secret := settings[model2.SettingKeyGiteeAppSecret]
 	if secret == "" {
-		return nil, errors.New("缺少配置:" + model.SettingKeyGiteeAppSecret)
+		return nil, errors.New("缺少配置:" + model2.SettingKeyGiteeAppSecret)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(secret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {

@@ -3,13 +3,13 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
 	"pmsGo/lib/security/rsa"
+	"pmsGo/model"
+	"pmsGo/service"
 )
 
 type setting struct {

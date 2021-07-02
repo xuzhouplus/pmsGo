@@ -5,11 +5,11 @@ import (
 	"github.com/idoubi/goz"
 	"log"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 )
 
 const BaiduGatewayType = "baidu"
@@ -45,13 +45,13 @@ type Baidu struct {
 
 func NewBaidu() (*Baidu, error) {
 	baiduGateway := &Baidu{}
-	baiduGateway.BaiduApiKei = service.SettingService.GetSetting(model.SettingKeyBaiduApiKey)
+	baiduGateway.BaiduApiKei = service2.SettingService.GetSetting(model2.SettingKeyBaiduApiKey)
 	if baiduGateway.BaiduApiKei == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyBaiduApiKey)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyBaiduApiKey)
 	}
-	secretKey := service.SettingService.GetSetting(model.SettingKeyBaiduSecretKey)
+	secretKey := service2.SettingService.GetSetting(model2.SettingKeyBaiduSecretKey)
 	if secretKey == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyBaiduSecretKey)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyBaiduSecretKey)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(secretKey), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {

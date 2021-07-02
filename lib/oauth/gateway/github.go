@@ -5,11 +5,11 @@ import (
 	"github.com/idoubi/goz"
 	"log"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 )
 
 const GitHubGatewayType = "github"
@@ -44,21 +44,21 @@ type GitHubAccessTokenResponse struct {
 
 func NewGitHub() (*GitHub, error) {
 	gitHub := &GitHub{}
-	settings := service.SettingService.GetSettings(model.GithubSettingModel.Keys())
+	settings := service2.SettingService.GetSettings(model2.GithubSettingModel.Keys())
 	if settings == nil {
 		return nil, errors.New("GitHub配置获取失败")
 	}
-	gitHub.GithubAppId = settings[model.SettingKeyGithubAppId]
+	gitHub.GithubAppId = settings[model2.SettingKeyGithubAppId]
 	if gitHub.GithubAppId == "" {
-		return nil, errors.New("缺少配置:" + model.SettingKeyGithubAppId)
+		return nil, errors.New("缺少配置:" + model2.SettingKeyGithubAppId)
 	}
-	gitHub.GithubApplicationName = settings[model.SettingKeyGithubApplicationName]
+	gitHub.GithubApplicationName = settings[model2.SettingKeyGithubApplicationName]
 	if gitHub.GithubApplicationName == "" {
-		return nil, errors.New("缺少配置:" + model.SettingKeyGithubApplicationName)
+		return nil, errors.New("缺少配置:" + model2.SettingKeyGithubApplicationName)
 	}
-	secret := settings[model.SettingKeyGithubAppSecret]
+	secret := settings[model2.SettingKeyGithubAppSecret]
 	if secret == "" {
-		return nil, errors.New("缺少配置:" + model.SettingKeyGithubAppSecret)
+		return nil, errors.New("缺少配置:" + model2.SettingKeyGithubAppSecret)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(secret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {

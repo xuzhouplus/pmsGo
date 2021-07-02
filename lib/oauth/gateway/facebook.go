@@ -5,11 +5,11 @@ import (
 	"github.com/idoubi/goz"
 	"log"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 )
 
 const FacebookGatewayType = "facebook"
@@ -36,14 +36,14 @@ type Facebook struct {
 
 func NewFacebook() (*Facebook, error) {
 	gateway := &Facebook{}
-	appId := service.SettingService.GetSetting(model.SettingKeyFacebookAppId)
+	appId := service2.SettingService.GetSetting(model2.SettingKeyFacebookAppId)
 	if appId == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyFacebookAppId)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyFacebookAppId)
 	}
 	gateway.FacebookAppId = appId
-	appSecret := service.SettingService.GetSetting(model.SettingKeyFacebookAppSecret)
+	appSecret := service2.SettingService.GetSetting(model2.SettingKeyFacebookAppSecret)
 	if appSecret == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyFacebookAppSecret)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyFacebookAppSecret)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(appSecret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {

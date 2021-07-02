@@ -6,13 +6,13 @@ import (
 	"github.com/idoubi/goz"
 	"log"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/helper"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
 	"pmsGo/lib/security/random"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 	"sort"
 	"strings"
 	"time"
@@ -40,14 +40,14 @@ type Twitter struct {
 
 func NewTwitter() (*Twitter, error) {
 	gateway := &Twitter{}
-	appId := service.SettingService.GetSetting(model.SettingKeyTwitterAppId)
+	appId := service2.SettingService.GetSetting(model2.SettingKeyTwitterAppId)
 	if appId == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyTwitterAppId)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyTwitterAppId)
 	}
 	gateway.TwitterAppId = appId
-	appSecret := service.SettingService.GetSetting(model.SettingKeyTwitterAppSecret)
+	appSecret := service2.SettingService.GetSetting(model2.SettingKeyTwitterAppSecret)
 	if appSecret == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyTwitterAppSecret)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyTwitterAppSecret)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(appSecret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {

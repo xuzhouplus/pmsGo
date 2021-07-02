@@ -4,8 +4,8 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"math"
-	"pmsGo/app/model"
 	"pmsGo/lib/security/random"
+	model "pmsGo/model"
 )
 
 type Post struct {

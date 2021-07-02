@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"pmsGo/app/model"
 	"pmsGo/lib/oauth/user"
 	"pmsGo/lib/security/rsa"
+	"pmsGo/model"
 )
 
 type Admin struct {

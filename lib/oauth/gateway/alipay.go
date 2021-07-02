@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/idoubi/goz"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
 	"pmsGo/lib/security/rsa"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 	"sort"
 	"strings"
 	"time"
@@ -59,18 +59,18 @@ type Alipay struct {
 
 func NewAlipay() (*Alipay, error) {
 	alipay := &Alipay{}
-	alipay.AlipayAppId = service.SettingService.GetSetting(model.SettingKeyAlipayAppId)
+	alipay.AlipayAppId = service2.SettingService.GetSetting(model2.SettingKeyAlipayAppId)
 	if alipay.AlipayAppId == "" {
-		return nil, fmt.Errorf("缺少参数：%v", model.SettingKeyAlipayAppId)
+		return nil, fmt.Errorf("缺少参数：%v", model2.SettingKeyAlipayAppId)
 	}
-	publicKey := service.SettingService.GetSetting(model.SettingKeyAlipayPublicKay)
+	publicKey := service2.SettingService.GetSetting(model2.SettingKeyAlipayPublicKay)
 	if publicKey == "" {
-		return nil, fmt.Errorf("缺少参数：%v", model.SettingKeyAlipayPublicKay)
+		return nil, fmt.Errorf("缺少参数：%v", model2.SettingKeyAlipayPublicKay)
 	}
 	alipay.AlipayPublicKey = rsa.FormatPublicKey(publicKey)
-	appPrimaryKey := service.SettingService.GetSetting(model.SettingKeyAlipayAppPrimaryKey)
+	appPrimaryKey := service2.SettingService.GetSetting(model2.SettingKeyAlipayAppPrimaryKey)
 	if appPrimaryKey == "" {
-		return nil, fmt.Errorf("缺少参数：%v", model.SettingKeyAlipayAppPrimaryKey)
+		return nil, fmt.Errorf("缺少参数：%v", model2.SettingKeyAlipayAppPrimaryKey)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(appPrimaryKey), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {

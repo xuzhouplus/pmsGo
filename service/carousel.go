@@ -2,9 +2,9 @@ package service
 
 import (
 	"errors"
-	"pmsGo/app/model"
 	"pmsGo/lib/image"
 	"pmsGo/lib/security/random"
+	"pmsGo/model"
 	"strconv"
 )
 

@@ -5,15 +5,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
-	image2 "pmsGo/lib/image"
-	auth2 "pmsGo/lib/middleware/auth"
+	"pmsGo/lib/image"
+	"pmsGo/lib/middleware/auth"
 	"pmsGo/lib/oauth"
 	"pmsGo/lib/oauth/gateway"
 	"pmsGo/lib/security/json"
+	"pmsGo/model"
+	"pmsGo/service"
 )
 
 type admin struct {
@@ -32,7 +32,7 @@ func (ctl admin) Login(ctx *gin.Context) {
 	} else {
 		session := sessions.Default(ctx)
 		data, _ := json.Encode(loginAdmin)
-		session.Set(auth2.SessionLoginAdminKey, data)
+		session.Set(auth.SessionLoginAdminKey, data)
 		session.Save()
 		returnAttr := make(map[string]string)
 		returnAttr["uuid"] = loginAdmin.Uuid
@@ -46,7 +46,7 @@ func (ctl admin) Login(ctx *gin.Context) {
 // Auth 获取登录账号信息
 func (ctl admin) Auth(ctx *gin.Context) {
 	loginAdmin := make(map[string]interface{})
-	loginData, _ := ctx.Get(auth2.ContextLoginAdminKey)
+	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
 	if loginData == nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
@@ -75,7 +75,7 @@ func (ctl admin) Logout(ctx *gin.Context) {
 // Profile 登录账号信息编辑
 func (ctl admin) Profile(ctx *gin.Context) {
 	loginAdmin := make(map[string]interface{})
-	loginData, _ := ctx.Get(auth2.ContextLoginAdminKey)
+	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
 	if loginData == nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
@@ -96,14 +96,14 @@ func (ctl admin) Profile(ctx *gin.Context) {
 		requestData := make(map[string]interface{})
 		ctx.ShouldBind(&requestData)
 		if requestData["avatar"] != nil {
-			instance, err := image2.Base64Upload(requestData["avatar"].(string), "/avatar")
+			instance, err := image.Base64Upload(requestData["avatar"].(string), "/avatar")
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 				return
 			}
 			requestData["avatar"] = string(instance.Url())
 			if account.Avatar != "" {
-				image2.Remove(string(image2.UrlToPath(image2.Url(account.Avatar))))
+				image.Remove(string(image.UrlToPath(image.Url(account.Avatar))))
 			}
 		}
 		admin, err := service.AdminService.Update(requestData)
@@ -118,7 +118,7 @@ func (ctl admin) Profile(ctx *gin.Context) {
 // Connects 获取登录账号绑定第三方信息
 func (ctl admin) Connects(ctx *gin.Context) {
 	loginAdmin := make(map[string]interface{})
-	loginData, _ := ctx.Get(auth2.ContextLoginAdminKey)
+	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
 	if loginData == nil {
 		ctx.JSON(http.StatusUnauthorized, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
@@ -138,7 +138,7 @@ func (ctl admin) Connects(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnData, "获取成功"))
 }
 
-// AuthorizeUrl 获取第三方oauth2授权地址
+// AuthorizeUrl 获取第三方oauth授权地址
 func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	gatewayType := ctx.Query("type")
 	oauthGateway, err := oauth.NewOauth(gatewayType)
@@ -153,7 +153,7 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 		return
 	}
 	session := sessions.Default(ctx)
-	loginData, _ := ctx.Get(auth2.ContextLoginAdminKey)
+	loginData, _ := ctx.Get(auth.ContextLoginAdminKey)
 	adminId := 0
 	if loginData != nil {
 		loginAdmin := loginData.(map[string]interface{})
@@ -183,7 +183,7 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, authorizeUrl, "获取成功"))
 }
 
-// AuthorizeUser 第三方oauth2回调
+// AuthorizeUser 第三方oauth回调
 func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 	requestData := ctx.Request.URL.Query()
 	if len(requestData) == 0 {
@@ -262,7 +262,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		}
 		session := sessions.Default(ctx)
 		data, _ := json.Encode(admin)
-		session.Set(auth2.SessionLoginAdminKey, data)
+		session.Set(auth.SessionLoginAdminKey, data)
 		session.Save()
 		returnAttr := make(map[string]string)
 		returnAttr["uuid"] = admin.Uuid
@@ -271,7 +271,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		returnAttr["account"] = admin.Account
 		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnAttr, "登录成功"))
 	case "bind":
-		contextLoginAdmin, exists := ctx.Get(auth2.ContextLoginAdminKey)
+		contextLoginAdmin, exists := ctx.Get(auth.ContextLoginAdminKey)
 		if (!exists) || contextLoginAdmin == nil {
 			ctx.JSON(http.StatusUnauthorized, ctl.Response(controller.CodeOk, nil, "需要登录"))
 			return

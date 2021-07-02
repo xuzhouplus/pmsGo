@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/idoubi/goz"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 )
 
 const GoogleGatewayType = "google"
@@ -35,14 +35,14 @@ type Google struct {
 
 func NewGoogle() (*Google, error) {
 	gateway := &Google{}
-	appId := service.SettingService.GetSetting(model.SettingKeyGoogleAppId)
+	appId := service2.SettingService.GetSetting(model2.SettingKeyGoogleAppId)
 	if appId == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyGoogleAppId)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyGoogleAppId)
 	}
 	gateway.GoogleAppId = appId
-	appSecret := service.SettingService.GetSetting(model.SettingKeyGoogleAppSecret)
+	appSecret := service2.SettingService.GetSetting(model2.SettingKeyGoogleAppSecret)
 	if appSecret == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyGoogleAppSecret)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyGoogleAppSecret)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(appSecret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {
