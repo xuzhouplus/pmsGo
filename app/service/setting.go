@@ -56,6 +56,7 @@ func (service Setting) IsUnsafeSetting(settingKey string) bool {
 	}
 	return false
 }
+
 func (service Setting) GetLoginSettings() []string {
 	connects := config.Config.Web.Connects
 	if len(connects) == 0 {
@@ -108,6 +109,7 @@ func (service Setting) GetLoginSettings() []string {
 	}
 	return available
 }
+
 func (service Setting) GetPublicSettings() (map[string]interface{}, error) {
 	var returnData = make(map[string]interface{})
 	var data []model.Setting
@@ -133,12 +135,14 @@ func (service Setting) GetSetting(key string) string {
 	}
 	return settingModel.Value
 }
+
 func (service *Setting) SetSetting(key string, value string) {
 	if service.Settings == nil {
 		service.Settings = make(map[string]string)
 	}
 	service.Settings[key] = value
 }
+
 func (service Setting) GetSettings(keys []string) map[string]string {
 	var ret = make(map[string]string)
 	if service.Settings != nil {
@@ -165,6 +169,7 @@ func (service Setting) GetSettings(keys []string) map[string]string {
 	}
 	return ret
 }
+
 func (service Setting) Find(keys []string, indexBy string) map[string]model.Setting {
 	var data []model.Setting
 	settingModel := &model.Setting{}
@@ -222,4 +227,15 @@ func (service *Setting) Save(keyPairs map[string]interface{}) error {
 	}
 	connect.Commit()
 	return nil
+}
+
+func (service Setting) BaiduPanAvailability() bool {
+	baiduSettings := service.GetSettings(model.BaiduSettingModel.Keys())
+	if baiduSettings[model.SettingKeyBaiduPanAvailability] == model.BaiduPanDisabled {
+		return false
+	}
+	if baiduSettings[model.SettingKeyBaiduApiKey] == "" || baiduSettings[model.SettingKeyBaiduSecretKey] == "" {
+		return false
+	}
+	return true
 }

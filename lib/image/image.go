@@ -170,7 +170,7 @@ func (img Image) CreateThumb(width int, height int, ext string) (*Image, error) 
 	if err != nil {
 		return nil, err
 	}
-	return target, err
+	return target, nil
 }
 
 func (img Image) CreatePreview(quality int) (*Image, error) {

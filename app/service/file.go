@@ -56,6 +56,7 @@ func (service File) List(page int, limit int, fields []string, fileType string, 
 	returnData["count"] = math.Ceil(float64(total) / float64(limit))
 	return returnData, nil
 }
+
 func (service File) Upload(uploaded *image.Instance, name string, description string) (*model.File, error) {
 	fileModel := &model.File{}
 	fileModel.Name = name
@@ -83,9 +84,10 @@ func (service File) Upload(uploaded *image.Instance, name string, description st
 		preview, err := fileImage.CreatePreview(62)
 		if err != nil {
 			channel <- map[string]string{"error": err.Error()}
+		}else{
+			prev := image.RelativePath(image.Path(preview.FullPath()))
+			channel <- map[string]string{"preview": prev}
 		}
-		prev := image.RelativePath(image.Path(preview.FullPath()))
-		channel <- map[string]string{"preview": prev}
 	}()
 	for i := range channel {
 		if i["error"] != "" {
@@ -120,6 +122,7 @@ func (service File) FindOne(id int) (*model.File, error) {
 	}
 	return one, nil
 }
+
 func (service File) Delete(id int) error {
 	var one model.File
 	connect := one.DB()
@@ -147,3 +150,4 @@ func (service File) Delete(id int) error {
 	}
 	return nil
 }
+
