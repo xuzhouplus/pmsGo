@@ -5,8 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
 	"pmsGo/lib/image"
@@ -14,6 +12,8 @@ import (
 	"pmsGo/lib/oauth"
 	"pmsGo/lib/oauth/gateway"
 	"pmsGo/lib/security/json"
+	"pmsGo/model"
+	"pmsGo/service"
 )
 
 type admin struct {
@@ -138,7 +138,7 @@ func (ctl admin) Connects(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnData, "获取成功"))
 }
 
-// AuthorizeUrl 获取第三方oauth2授权地址
+// AuthorizeUrl 获取第三方oauth授权地址
 func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	gatewayType := ctx.Query("type")
 	oauthGateway, err := oauth.NewOauth(gatewayType)
@@ -183,7 +183,7 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, authorizeUrl, "获取成功"))
 }
 
-// AuthorizeUser 第三方oauth2回调
+// AuthorizeUser 第三方oauth回调
 func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 	requestData := ctx.Request.URL.Query()
 	if len(requestData) == 0 {

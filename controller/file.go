@@ -3,9 +3,9 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"pmsGo/app/service"
 	"pmsGo/lib/controller"
 	"pmsGo/lib/image"
+	"pmsGo/service"
 	"strconv"
 )
 

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/idoubi/goz"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 )
 
 const WeiboGatewayType = "weibo"
@@ -47,14 +47,14 @@ type Weibo struct {
 
 func NewWeibo() (*Weibo, error) {
 	gateway := &Weibo{}
-	appId := service.SettingService.GetSetting(model.SettingKeyWeiboAppId)
+	appId := service2.SettingService.GetSetting(model2.SettingKeyWeiboAppId)
 	if appId == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyWeiboAppId)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyWeiboAppId)
 	}
 	gateway.WeiboAppKey = appId
-	appSecret := service.SettingService.GetSetting(model.SettingKeyWeiboAppSecret)
+	appSecret := service2.SettingService.GetSetting(model2.SettingKeyWeiboAppSecret)
 	if appSecret == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyWeiboAppSecret)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyWeiboAppSecret)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(appSecret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/idoubi/goz"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 )
 
 const WechatGatewayType = "wechat"
@@ -35,14 +35,14 @@ type Wechat struct {
 
 func NewWechat() (*Wechat, error) {
 	gateway := &Wechat{}
-	appId := service.SettingService.GetSetting(model.SettingKeyWechatAppId)
+	appId := service2.SettingService.GetSetting(model2.SettingKeyWechatAppId)
 	if appId == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyWechatAppId)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyWechatAppId)
 	}
 	gateway.WechatAppId = appId
-	appSecret := service.SettingService.GetSetting(model.SettingKeyWechatAppSecret)
+	appSecret := service2.SettingService.GetSetting(model2.SettingKeyWechatAppSecret)
 	if appSecret == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyWechatAppSecret)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyWechatAppSecret)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(appSecret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {

@@ -15,6 +15,11 @@ const (
 	SettingKeyLoginDuration = "login_duration" //登录有效时长
 )
 
+const (
+	MaintainTrue  = "true"
+	MaintainFalse = "false"
+)
+
 type SiteSetting struct {
 	Setting
 }
@@ -27,4 +32,3 @@ func (model SiteSetting) TableName() string {
 func (model SiteSetting) Keys() []string {
 	return []string{SettingKeyTitle, SettingKeyIcp, SettingKeyVersion, SettingKeyMaintain, SettingKeyIcon, SettingKeyLogo, SettingKeyEncryptSecret, SettingKeyLoginDuration}
 }
-

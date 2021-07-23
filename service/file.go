@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 	"math"
-	"pmsGo/app/model"
 	"pmsGo/lib/image"
+	"pmsGo/model"
 )
 
 type File struct {

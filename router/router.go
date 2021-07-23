@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"pmsGo/app/controller"
+	"pmsGo/controller"
 	"pmsGo/lib/config"
 	"pmsGo/lib/middleware/auth"
 	"pmsGo/lib/middleware/cors"

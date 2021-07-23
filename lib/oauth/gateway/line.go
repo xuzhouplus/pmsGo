@@ -5,11 +5,11 @@ import (
 	"github.com/idoubi/goz"
 	"log"
 	"net/url"
-	"pmsGo/app/model"
-	"pmsGo/app/service"
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
+	model2 "pmsGo/model"
+	service2 "pmsGo/service"
 )
 
 const LineGatewayType = "line"
@@ -37,14 +37,14 @@ type Line struct {
 
 func NewLine() (*Line, error) {
 	gateway := &Line{}
-	appId := service.SettingService.GetSetting(model.SettingKeyLineAppId)
+	appId := service2.SettingService.GetSetting(model2.SettingKeyLineAppId)
 	if appId == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyLineAppId)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyLineAppId)
 	}
 	gateway.LineAppId = appId
-	appSecret := service.SettingService.GetSetting(model.SettingKeyLineAppSecret)
+	appSecret := service2.SettingService.GetSetting(model2.SettingKeyLineAppSecret)
 	if appSecret == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyLineAppSecret)
+		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyLineAppSecret)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(appSecret), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {
