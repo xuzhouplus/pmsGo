@@ -1,8 +1,48 @@
 package controller
 
-type App struct {
-	Except   []string
-	Optional []string
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
+type Method string
+
+const (
+	Post    = http.MethodPost
+	Put     = http.MethodPut
+	Options = http.MethodOptions
+	Get     = http.MethodGet
+	Delete  = http.MethodDelete
+	Head    = http.MethodHead
+	Patch   = http.MethodPatch
+	Trace   = http.MethodTrace
+	Connect = http.MethodConnect
+	Any     = "*"
+)
+
+// Except 不需要登录
+const Except = "except"
+
+// Optional 可以不登录
+const Optional = "optional"
+
+// Forbidden 拒绝访问
+const Forbidden = "forbidden"
+
+type Authenticator struct {
+	Excepts   []string
+	Optionals []string
+}
+
+type AppInterface interface {
+	Verbs() map[string][]string
+	Authenticator() Authenticator
+	Actions() map[string]gin.HandlerFunc
+}
+
+type AppController struct {
+	Excepts   []string
+	Optionals []string
 }
 
 const (
@@ -16,13 +56,29 @@ type response struct {
 	Data    interface{} `json:"data"`
 }
 
-func (controller App) CodeOk() int {
+func (controller AppController) Verbs() map[string][]string {
+	return nil
+}
+
+func (controller AppController) Authenticator() Authenticator {
+	authenticator := Authenticator{
+		controller.Excepts,
+		controller.Optionals,
+	}
+	return authenticator
+}
+
+func (controller AppController) Actions() map[string]gin.HandlerFunc {
+	return nil
+}
+
+func (controller AppController) CodeOk() int {
 	return CodeOk
 }
-func (controller App) CodeFail() int {
+func (controller AppController) CodeFail() int {
 	return CodeFail
 }
-func (controller App) Response(code int, data interface{}, message string) *response {
+func (controller AppController) Response(code int, data interface{}, message string) *response {
 	returnData := &response{}
 	if code == 0 {
 		returnData.Code = CodeFail
@@ -34,7 +90,7 @@ func (controller App) Response(code int, data interface{}, message string) *resp
 	return returnData
 }
 
-func (controller App) ResponseOk(data interface{}, message string) *response {
+func (controller AppController) ResponseOk(data interface{}, message string) *response {
 	returnData := &response{}
 	returnData.Code = CodeOk
 	returnData.Data = data
@@ -42,7 +98,7 @@ func (controller App) ResponseOk(data interface{}, message string) *response {
 	return returnData
 }
 
-func (controller App) ResponseFail(data interface{}, message string) *response {
+func (controller AppController) ResponseFail(data interface{}, message string) *response {
 	returnData := &response{}
 	returnData.Code = CodeFail
 	returnData.Data = data

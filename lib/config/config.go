@@ -21,19 +21,19 @@ type config struct {
 var Config = &config{}
 
 func init() {
-	pwd, error := os.Getwd()
-	if error != nil {
-		panic(error)
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
 	}
 	dirSep := string(filepath.Separator)
 	cfgFile := pwd + dirSep + "config" + dirSep + "app.yaml"
-	file, error := ioutil.ReadFile(cfgFile)
-	if error != nil {
-		panic(fmt.Sprintf("Can`t read config image:%err\n", error))
+	file, err := ioutil.ReadFile(cfgFile)
+	if err != nil {
+		panic(fmt.Sprintf("Can`t read config image:%err\n", err))
 	}
 
-	error = yaml.Unmarshal(file, Config)
-	if error != nil {
-		panic(fmt.Sprintf("Can`t analyse config image:%err\n", error))
+	err = yaml.Unmarshal(file, Config)
+	if err != nil {
+		panic(fmt.Sprintf("Can`t analyse config image:%err\n", err))
 	}
 }

@@ -42,11 +42,11 @@ func Key(key string) string {
 func Get(key string) (interface{}, error) {
 	key = Key(key)
 	var val interface{}
-	error := Cache.Get(context.Background(), key, &val)
-	if error == redis.Nil {
+	err := Cache.Get(context.Background(), key, &val)
+	if err == redis.Nil {
 		return nil, nil
-	} else if error != nil {
-		return nil, error
+	} else if err != nil {
+		return nil, err
 	}
 	return val, nil
 }

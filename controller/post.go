@@ -11,7 +11,7 @@ import (
 )
 
 type post struct {
-	controller.App
+	controller.AppController
 }
 
 var Post = &post{}

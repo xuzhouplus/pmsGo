@@ -10,7 +10,7 @@ import (
 )
 
 type file struct {
-	controller.App
+	controller.AppController
 }
 
 var File = &file{}

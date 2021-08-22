@@ -12,7 +12,7 @@ import (
 )
 
 type carousel struct {
-	controller.App
+	controller.AppController
 }
 
 var Carousel = &carousel{}

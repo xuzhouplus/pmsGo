@@ -23,7 +23,7 @@ func (service Post) List(page int, size int, fields []string, like string, enabl
 	if page < 0 {
 		page = 0
 	}
-	if size != 0 {
+	if size == 0 {
 		size = 10
 	}
 	connect.Offset((page - 1) * size)

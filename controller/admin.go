@@ -17,10 +17,30 @@ import (
 )
 
 type admin struct {
-	controller.App
+	controller.AppController
 }
 
 var Admin = &admin{}
+
+func (ctl admin) Verbs() map[string][]string {
+	verbs := make(map[string][]string)
+	verbs["login"] = []string{controller.Post}
+	return verbs
+}
+
+func (ctl admin) Authenticator() controller.Authenticator {
+	var excepts []string
+	optionals := []string{"login", "auth", "logout", "authorize", "authorize-url", "callback", "authorize-user"}
+	authenticator := controller.Authenticator{
+		Excepts:   excepts,
+		Optionals: optionals,
+	}
+	return authenticator
+}
+
+func (ctl admin) Actions() map[string]gin.HandlerFunc {
+	return nil
+}
 
 // Login 账号登录
 func (ctl admin) Login(ctx *gin.Context) {

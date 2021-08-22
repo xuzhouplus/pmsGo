@@ -1,8 +1,10 @@
 package main
 
-import "pmsGo/lib/app"
+import (
+	"pmsGo/lib/app"
+)
 
 //程序入口
 func main() {
-	app.Run()
+	app.Bootstrap()
 }

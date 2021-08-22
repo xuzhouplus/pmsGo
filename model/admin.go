@@ -27,6 +27,7 @@ type Admin struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Salt      string    `json:"_"`
+
 }
 
 func (model Admin) DB() *gorm.DB {

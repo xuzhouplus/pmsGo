@@ -13,10 +13,17 @@ import (
 )
 
 type setting struct {
-	controller.App
+	controller.AppController
 }
 
 var Setting = &setting{}
+
+func (setting setting) Authenticator() controller.Authenticator {
+	authenticator := controller.Authenticator{
+		Excepts: []string{"index", "login", "connect", "site"},
+	}
+	return authenticator
+}
 
 func (setting setting) Index(c *gin.Context) {
 	result, err := service.SettingService.GetPublicSettings()
