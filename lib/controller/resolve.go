@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pmsGo/lib/helper"
@@ -15,100 +16,145 @@ type action struct {
 	Handler       interface{}
 }
 
-func (a action) Func() gin.HandlerFunc {
-	switch a.Handler.(type) {
+type Resolve struct {
+	Value   reflect.Value
+	Type    reflect.Type
+	Actions map[string]*action
+}
+
+func NewResolve(controller AppInterface) *Resolve {
+	resolve := &Resolve{
+		Actions: make(map[string]*action),
+	}
+	resolve.ReflectController(controller)
+	resolve.ReflectActions(controller)
+	return resolve
+}
+func (r Resolve) Handle(method string) gin.HandlerFunc {
+	action := r.Actions[method]
+	switch action.Handler.(type) {
 	case gin.HandlerFunc:
-		return a.Handler.(gin.HandlerFunc)
+		return action.Handler.(gin.HandlerFunc)
 	case reflect.Method:
-		handlerFunc := a.Handler.(reflect.Method)
+		handlerFunc := action.Handler.(reflect.Method)
 		return func(context *gin.Context) {
-			result := handlerFunc.Func.Call([]reflect.Value{reflect.ValueOf(context)})
+			in := make([]reflect.Value, 2)
+			in[0] = r.Value
+			in[1] = reflect.ValueOf(context)
+			result := handlerFunc.Func.Call(in)
 			log.Debug(result)
 		}
 	default:
+		fmt.Println(action)
 		return func(context *gin.Context) {
 			context.JSON(http.StatusNotFound, nil)
 		}
 	}
 }
-
-type Resolve struct {
-	Controller    reflect.Type
-	Verbs         map[string][]string
-	Authenticator Authenticator
-	Actions       map[string]*action
+func (r Resolve) GetControllerName() string {
+	return r.Type.Elem().Name()
 }
-
-func NewResolve(controller AppInterface) *Resolve {
-	resolve := &Resolve{}
-	resolve.Actions = make(map[string]*action)
-	resolve.Verbs = make(map[string][]string)
-	resolve.ReflectController(controller)
-	resolve.Verbs = controller.Verbs()
-	resolve.Authenticator = controller.Authenticator()
-	resolve.ReflectActions(controller)
-	return resolve
+func (r Resolve) GetActions() map[string]*action {
+	return r.Actions
+}
+func (r Resolve) GetAction(method string) *action {
+	return r.Actions[method]
 }
 func (r *Resolve) ReflectController(controller AppInterface) {
-	r.Controller = reflect.TypeOf(controller).Elem()
+	r.Type = reflect.TypeOf(controller)
+	r.Value = reflect.ValueOf(controller)
+}
+func (r Resolve) ReflectVerbs(controller AppInterface) map[string][]string {
+	methodVerbs := make(map[string][]string)
+	actionVerbs := controller.Verbs()
+	for action, verbs := range actionVerbs {
+		method := r.ResolveAction(action)
+		methodVerbs[method] = verbs
+	}
+	return methodVerbs
+}
+func (r Resolve) ReflectAuthenticator(controller AppInterface) Authenticator {
+	methodAuthenticator := Authenticator{
+		Excepts:   []string{},
+		Optionals: []string{},
+	}
+	authenticator := controller.Authenticator()
+	if authenticator.Excepts != nil {
+		for _, exceptAction := range authenticator.Excepts {
+			methodAuthenticator.Excepts = append(methodAuthenticator.Excepts, r.ResolveAction(exceptAction))
+		}
+	}
+	if authenticator.Optionals != nil {
+		for _, optionalAction := range authenticator.Optionals {
+			methodAuthenticator.Optionals = append(methodAuthenticator.Optionals, r.ResolveAction(optionalAction))
+		}
+	}
+	return methodAuthenticator
 }
 func (r *Resolve) ReflectActions(controller AppInterface) {
-	methodNum := r.Controller.NumMethod()
+	methodNum := r.Type.NumMethod()
+	verbs := r.ReflectVerbs(controller)
+	authenticator := r.ReflectAuthenticator(controller)
 	actions := controller.Actions()
 	if actions != nil {
 		for name, handlerFunc := range actions {
+			name = helper.CamelToLine(name)
 			r.Actions[name] = &action{
 				Name:          name,
 				Handler:       handlerFunc,
-				Verbs:         r.ReflectVerb(name),
-				Authenticator: r.ReflectAuthenticator(name),
+				Verbs:         r.ResolveVerb(verbs, name),
+				Authenticator: r.ResolveAuthenticator(authenticator, name),
 			}
 		}
 	}
 	for loopIndex := 0; loopIndex < methodNum; loopIndex++ {
-		method := r.Controller.Method(loopIndex)
-		if method.IsExported() && method.Type.String() == "func(controller.admin, *gin.Context)" {
-			actionReflect := &action{
-				Name:          method.Name,
+		method := r.Type.Method(loopIndex)
+		if method.IsExported() && method.Type.String() == ("func(*controller."+r.GetControllerName()+", *gin.Context)") {
+			name := helper.CamelToLine(method.Name)
+			r.Actions[name] = &action{
+				Name:          name,
 				Handler:       method,
-				Verbs:         r.ReflectVerb(method.Name),
-				Authenticator: r.ReflectAuthenticator(method.Name),
+				Verbs:         r.ResolveVerb(verbs, name),
+				Authenticator: r.ResolveAuthenticator(authenticator, name),
 			}
-			r.Actions[method.Name] = actionReflect
 		}
 	}
 }
-
-func (r Resolve) ReflectVerb(action string) []string {
-	if r.Verbs == nil {
-		return []string{
-			Any,
-		}
-	}
-	verbs := r.Verbs[action]
+func (r Resolve) ResolveAction(action string) string {
+	return helper.CamelToLine(action)
+}
+func (r Resolve) ResolveVerb(verbs map[string][]string, action string) []string {
 	if verbs == nil {
 		return []string{
 			Any,
 		}
 	}
-	_, result := helper.IsInSlice(verbs, Any)
+	actionVerbs := verbs[action]
+	if actionVerbs == nil {
+		return []string{
+			Any,
+		}
+	}
+	_, result := helper.IsInSlice(actionVerbs, Any)
 	if result {
 		return []string{
 			Any,
 		}
 	}
-	return verbs
+	return actionVerbs
 }
 
-func (r Resolve) ReflectAuthenticator(action string) string {
-	if r.Authenticator.Excepts != nil {
-		_, result := helper.IsInSlice(r.Authenticator.Excepts, action)
+func (r Resolve) ResolveAuthenticator(authenticator Authenticator, action string) string {
+	if len(authenticator.Excepts) > 0 {
+		_, result := helper.IsInSlice(authenticator.Excepts, action)
 		if result {
 			return Except
 		}
 	}
-	if r.Authenticator.Optionals == nil {
-		_, result := helper.IsInSlice(r.Authenticator.Optionals, action)
+	if len(authenticator.Optionals) > 0 {
+		fmt.Println(authenticator.Optionals)
+		fmt.Println(action)
+		_, result := helper.IsInSlice(authenticator.Optionals, action)
 		if result {
 			return Optional
 		}

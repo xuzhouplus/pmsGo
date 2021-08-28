@@ -38,16 +38,21 @@ func (e *Engine) Use(handlerFunc ...gin.HandlerFunc) {
 
 func (e *Engine) Router(appInterface controller.AppInterface) {
 	resolve := controller.NewResolve(appInterface)
-	controllerName := resolve.Controller.Name()
-	group := e.server.Group("/" + controllerName)
+	group := e.server.Group("/" + resolve.GetControllerName())
 	auth.Add(resolve)
-	for _, action := range resolve.Actions {
+	for _, action := range resolve.GetActions() {
 		for _, verb := range action.Verbs {
+			var actionName string
+			if action.Name == "index" {
+				actionName = ""
+			} else {
+				actionName = "/" + action.Name
+			}
 			if verb == controller.Any {
-				group.Any("/"+action.Name, action.Func())
+				group.Any(actionName, resolve.Handle(action.Name))
 				break
 			}
-			group.Handle(strings.ToUpper(verb), "/"+action.Name, action.Func())
+			group.Handle(strings.ToUpper(verb), actionName, resolve.Handle(action.Name))
 		}
 	}
 }

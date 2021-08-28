@@ -18,23 +18,45 @@ type setting struct {
 
 var Setting = &setting{}
 
+func (setting setting) Verbs() map[string][]string {
+	verbs := make(map[string][]string)
+	verbs["index"] = []string{controller.Get}
+	verbs["login"] = []string{controller.Get}
+	verbs["connects"] = []string{controller.Get, controller.Post}
+	verbs["site"] = []string{controller.Get, controller.Post}
+	verbs["carousel"] = []string{controller.Get, controller.Post}
+	verbs["alipay"] = []string{controller.Get, controller.Post}
+	verbs["baidu"] = []string{controller.Get, controller.Post}
+	verbs["facebook"] = []string{controller.Get, controller.Post}
+	verbs["github"] = []string{controller.Get, controller.Post}
+	verbs["gitee"] = []string{controller.Get, controller.Post}
+	verbs["google"] = []string{controller.Get, controller.Post}
+	verbs["line"] = []string{controller.Get, controller.Post}
+	verbs["qq"] = []string{controller.Get, controller.Post}
+	verbs["twitter"] = []string{controller.Get, controller.Post}
+	verbs["wechat"] = []string{controller.Get, controller.Post}
+	verbs["weibo"] = []string{controller.Get, controller.Post}
+	verbs["save"] = []string{controller.Post}
+	return verbs
+}
+
 func (setting setting) Authenticator() controller.Authenticator {
 	authenticator := controller.Authenticator{
-		Excepts: []string{"index", "login", "connect", "site"},
+		Excepts: []string{"index", "login"},
 	}
 	return authenticator
 }
 
-func (setting setting) Index(c *gin.Context) {
+func (setting setting) Index(ctx *gin.Context) {
 	result, err := service.SettingService.GetPublicSettings()
 	if err != nil {
-		c.JSON(http.StatusOK, err.Error())
+		ctx.JSON(http.StatusOK, err.Error())
 		return
 	}
 	returnData := make(map[string]interface{})
 	returnData["code"] = 1
 	returnData["data"] = result
-	c.JSON(http.StatusOK, returnData)
+	ctx.JSON(http.StatusOK, returnData)
 }
 
 func (setting setting) Login(ctx *gin.Context) {
@@ -421,7 +443,6 @@ func (setting setting) Weibo(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, setting.Response(controller.CodeOk, nil, "保存成功"))
 	}
 }
-
 func (setting setting) Save(ctx *gin.Context) {
 	var keyPairs = make(map[string]interface{})
 	ctx.ShouldBind(&keyPairs)

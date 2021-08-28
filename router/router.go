@@ -12,6 +12,7 @@ func Router(engine *core.Engine) {
 	engine.Router(controller.Setting)
 	engine.Router(controller.Post)
 	engine.Router(controller.File)
+	engine.Router(controller.Carousel)
 	/**
 	//账号路由分组
 	admin := engine.Group("/admin")

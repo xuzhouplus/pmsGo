@@ -15,6 +15,21 @@ type file struct {
 
 var File = &file{}
 
+func (cto file) Verbs() map[string][]string {
+	verbs := make(map[string][]string)
+	verbs["index"] = []string{controller.Get}
+	verbs["upload"] = []string{controller.Post}
+	verbs["delete"] = []string{controller.Post}
+	return verbs
+}
+
+func (cto file) Authenticator() controller.Authenticator {
+	authenticator := controller.Authenticator{
+		Excepts:   []string{},
+		Optionals: []string{"index", "upload", "delete"},
+	}
+	return authenticator
+}
 func (cto file) Index(ctx *gin.Context) {
 	page := ctx.Query("page")
 	pageNum, _ := strconv.Atoi(page)

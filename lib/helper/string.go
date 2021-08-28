@@ -1,5 +1,7 @@
 package helper
 
+import "strings"
+
 func FirstToUpper(input string) string {
 	if input == "" {
 		return ""
@@ -24,4 +26,23 @@ func FirstToLower(input string) string {
 		return string(tmp)
 	}
 	return input
+}
+
+func CamelToLine(str string) string {
+	splits := []rune(str)
+	join := ""
+	for index, split := range splits {
+		chart := string(split)
+		lower := strings.ToLower(chart)
+		if lower != chart {
+			if index == 0 {
+				join = lower
+			} else {
+				join += "-" + lower
+			}
+		} else {
+			join += lower
+		}
+	}
+	return join
 }

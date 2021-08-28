@@ -44,7 +44,7 @@ func getAuthType(controllerName string, actionName string) string {
 	if controllerAuthenticator == nil {
 		return controller.Forbidden
 	}
-	actionAuthenticator := controllerAuthenticator.Actions[actionName]
+	actionAuthenticator := controllerAuthenticator.GetAction(actionName)
 	if actionAuthenticator == nil {
 		return controller.Forbidden
 	}
@@ -53,7 +53,7 @@ func getAuthType(controllerName string, actionName string) string {
 
 // Add 添加验证数据
 func Add(resolve *controller.Resolve) {
-	Authenticators[resolve.Controller.Name()] = resolve
+	Authenticators[resolve.GetControllerName()] = resolve
 }
 
 // Auth Register 注册登录判断中间件

@@ -25,27 +25,33 @@ var Admin = &admin{}
 func (ctl admin) Verbs() map[string][]string {
 	verbs := make(map[string][]string)
 	verbs["login"] = []string{controller.Post}
+	verbs["auth"] = []string{controller.Get}
+	verbs["logout"] = []string{controller.Post}
+	verbs["profile"] = []string{controller.Post, controller.Get}
+	verbs["connects"] = []string{controller.Get}
+	verbs["authorize"] = []string{controller.Get}
+	verbs["authorize-url"] = []string{controller.Get}
+	verbs["callback"] = []string{controller.Get}
+	verbs["authorize-user"] = []string{controller.Get}
 	return verbs
 }
 
 func (ctl admin) Authenticator() controller.Authenticator {
-	var excepts []string
-	optionals := []string{"login", "auth", "logout", "authorize", "authorize-url", "callback", "authorize-user"}
 	authenticator := controller.Authenticator{
-		Excepts:   excepts,
-		Optionals: optionals,
+		Excepts:   []string{},
+		Optionals: []string{"login", "auth", "logout", "authorize", "authorize-url", "callback", "authorize-user"},
 	}
 	return authenticator
-}
-
-func (ctl admin) Actions() map[string]gin.HandlerFunc {
-	return nil
 }
 
 // Login 账号登录
 func (ctl admin) Login(ctx *gin.Context) {
 	requestData := make(map[string]string)
-	ctx.ShouldBind(&requestData)
+	err := ctx.ShouldBind(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeFail, nil, err.Error()))
+		return
+	}
 	loginAdmin, err := service.AdminService.Login(requestData["account"], requestData["password"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeFail, nil, err.Error()))
@@ -53,7 +59,11 @@ func (ctl admin) Login(ctx *gin.Context) {
 		session := sessions.Default(ctx)
 		data, _ := json.Encode(loginAdmin)
 		session.Set(auth.SessionLoginAdminKey, data)
-		session.Save()
+		err := session.Save()
+		if err != nil {
+			ctx.JSON(http.StatusOK, ctl.Response(controller.CodeFail, nil, err.Error()))
+			return
+		}
 		returnAttr := make(map[string]string)
 		returnAttr["uuid"] = loginAdmin.Uuid
 		returnAttr["type"] = loginAdmin.Type
@@ -88,7 +98,11 @@ func (ctl admin) Auth(ctx *gin.Context) {
 func (ctl admin) Logout(ctx *gin.Context) {
 	session := sessions.Default(ctx)
 	session.Clear()
-	session.Save()
+	err := session.Save()
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, nil, err.Error()))
+		return
+	}
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, nil, "退出成功"))
 }
 
@@ -114,7 +128,11 @@ func (ctl admin) Profile(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, account, "获取成功"))
 	} else {
 		requestData := make(map[string]interface{})
-		ctx.ShouldBind(&requestData)
+		err := ctx.ShouldBind(&requestData)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
+			return
+		}
 		if requestData["avatar"] != nil {
 			instance, err := image.Base64Upload(requestData["avatar"].(string), "/avatar")
 			if err != nil {
@@ -123,7 +141,11 @@ func (ctl admin) Profile(ctx *gin.Context) {
 			}
 			requestData["avatar"] = string(instance.Url())
 			if account.Avatar != "" {
-				image.Remove(string(image.UrlToPath(image.Url(account.Avatar))))
+				err := image.Remove(string(image.UrlToPath(image.Url(account.Avatar))))
+				if err != nil {
+					ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
+					return
+				}
 			}
 		}
 		admin, err := service.AdminService.Update(requestData)
@@ -156,6 +178,10 @@ func (ctl admin) Connects(ctx *gin.Context) {
 		}
 	}
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnData, "获取成功"))
+}
+
+func (ctl admin) Authorize(ctx *gin.Context) {
+	ctl.AuthorizeUrl(ctx)
 }
 
 // AuthorizeUrl 获取第三方oauth授权地址
@@ -201,6 +227,10 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, authorizeUrl, "获取成功"))
+}
+
+func (ctl admin) Callback(ctx *gin.Context) {
+	ctl.AuthorizeUser(ctx)
 }
 
 // AuthorizeUser 第三方oauth回调
@@ -283,7 +313,11 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		session := sessions.Default(ctx)
 		data, _ := json.Encode(admin)
 		session.Set(auth.SessionLoginAdminKey, data)
-		session.Save()
+		err = session.Save()
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
+			return
+		}
 		returnAttr := make(map[string]string)
 		returnAttr["uuid"] = admin.Uuid
 		returnAttr["type"] = admin.Type
@@ -298,8 +332,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		}
 		bind, err := service.AdminService.Bind(int(authorizeData["admin"].(float64)), user)
 		if err != nil {
-			log.Println(err)
-			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "绑定失败"))
+			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 			return
 		}
 		ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, bind, "获取成功"))
