@@ -35,9 +35,9 @@ type Authenticator struct {
 }
 
 type AppInterface interface {
-	Verbs() map[string][]string
-	Authenticator() Authenticator
-	Actions() map[string]gin.HandlerFunc
+	Verbs() map[string][]string          // Verbs 配置方法请求方式
+	Authenticator() Authenticator        // Authenticator 配置方法登录限制
+	Actions() map[string]gin.HandlerFunc // Actions 配置方法映射
 }
 
 type AppController struct {
@@ -75,9 +75,11 @@ func (controller AppController) Actions() map[string]gin.HandlerFunc {
 func (controller AppController) CodeOk() int {
 	return CodeOk
 }
+
 func (controller AppController) CodeFail() int {
 	return CodeFail
 }
+
 func (controller AppController) Response(code int, data interface{}, message string) *response {
 	returnData := &response{}
 	if code == 0 {

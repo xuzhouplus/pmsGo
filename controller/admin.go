@@ -22,6 +22,7 @@ type admin struct {
 
 var Admin = &admin{}
 
+// Verbs 配置方法请求方式
 func (ctl admin) Verbs() map[string][]string {
 	verbs := make(map[string][]string)
 	verbs["login"] = []string{controller.Post}
@@ -36,6 +37,7 @@ func (ctl admin) Verbs() map[string][]string {
 	return verbs
 }
 
+// Authenticator 配置方法登录限制
 func (ctl admin) Authenticator() controller.Authenticator {
 	authenticator := controller.Authenticator{
 		Excepts:   []string{},

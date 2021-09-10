@@ -3,10 +3,9 @@
 #### 目录结构
 
 ```
-app
-	controller #控制器
-	model      #数据模型
-	service    #服务
+controller #控制器
+model      #数据模型
+service    #服务
 config         #yaml配置文件
 lib
 	app        #程序初始化

@@ -1,27 +1,28 @@
 package controller
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pmsGo/lib/helper"
-	"pmsGo/lib/log"
 	"reflect"
 )
 
+//控制器请求方法
 type action struct {
-	Name          string
-	Verbs         []string
-	Authenticator string
-	Handler       interface{}
+	Name          string      //方法名称
+	Verbs         []string    //方法接受的请求方式
+	Authenticator string      //方法登录授权验证方式
+	Handler       interface{} //请求处理方法
 }
 
+// Resolve 控制器解析结果
 type Resolve struct {
-	Value   reflect.Value
-	Type    reflect.Type
-	Actions map[string]*action
+	Value   reflect.Value      //控制器实例
+	Type    reflect.Type       //控制器类型
+	Actions map[string]*action //控制器中的方法
 }
 
+// NewResolve 获取控制器解析结果
 func NewResolve(controller AppInterface) *Resolve {
 	resolve := &Resolve{
 		Actions: make(map[string]*action),
@@ -30,6 +31,8 @@ func NewResolve(controller AppInterface) *Resolve {
 	resolve.ReflectActions(controller)
 	return resolve
 }
+
+// Handle 获取请求处理方法
 func (r Resolve) Handle(method string) gin.HandlerFunc {
 	action := r.Actions[method]
 	switch action.Handler.(type) {
@@ -41,29 +44,37 @@ func (r Resolve) Handle(method string) gin.HandlerFunc {
 			in := make([]reflect.Value, 2)
 			in[0] = r.Value
 			in[1] = reflect.ValueOf(context)
-			result := handlerFunc.Func.Call(in)
-			log.Debug(result)
+			handlerFunc.Func.Call(in)
 		}
 	default:
-		fmt.Println(action)
 		return func(context *gin.Context) {
-			context.JSON(http.StatusNotFound, nil)
+			context.JSON(http.StatusNotImplemented, nil)
 		}
 	}
 }
+
+// GetControllerName 获取控制器名称
 func (r Resolve) GetControllerName() string {
-	return r.Type.Elem().Name()
+	return helper.CamelToLine(r.Type.Elem().Name())
 }
+
+// GetActions 获取控制器方法
 func (r Resolve) GetActions() map[string]*action {
 	return r.Actions
 }
+
+// GetAction 获取指定的控制器方法
 func (r Resolve) GetAction(method string) *action {
 	return r.Actions[method]
 }
+
+// ReflectController 反射控制器类型和实例
 func (r *Resolve) ReflectController(controller AppInterface) {
 	r.Type = reflect.TypeOf(controller)
 	r.Value = reflect.ValueOf(controller)
 }
+
+// ReflectVerbs 解析方法请求方式配置映射到方法名称上
 func (r Resolve) ReflectVerbs(controller AppInterface) map[string][]string {
 	methodVerbs := make(map[string][]string)
 	actionVerbs := controller.Verbs()
@@ -73,6 +84,8 @@ func (r Resolve) ReflectVerbs(controller AppInterface) map[string][]string {
 	}
 	return methodVerbs
 }
+
+// ReflectAuthenticator 解析方法登录授权配置
 func (r Resolve) ReflectAuthenticator(controller AppInterface) Authenticator {
 	methodAuthenticator := Authenticator{
 		Excepts:   []string{},
@@ -91,10 +104,16 @@ func (r Resolve) ReflectAuthenticator(controller AppInterface) Authenticator {
 	}
 	return methodAuthenticator
 }
+
+// ReflectActions 反射控制器方法
 func (r *Resolve) ReflectActions(controller AppInterface) {
+	//获取控制器方法数量
 	methodNum := r.Type.NumMethod()
+	//获取控制器方法请求方式配置
 	verbs := r.ReflectVerbs(controller)
+	//获取控制器方法登录权限控制
 	authenticator := r.ReflectAuthenticator(controller)
+	//获取控制器Actions方法中定义的方法
 	actions := controller.Actions()
 	if actions != nil {
 		for name, handlerFunc := range actions {
@@ -107,9 +126,14 @@ func (r *Resolve) ReflectActions(controller AppInterface) {
 			}
 		}
 	}
+	//反射获取控制器中的方法
+	methodType := "func(*controller." + r.Type.Elem().Name() + ", *gin.Context)"
 	for loopIndex := 0; loopIndex < methodNum; loopIndex++ {
+		//反射获取方法信息
 		method := r.Type.Method(loopIndex)
-		if method.IsExported() && method.Type.String() == ("func(*controller."+r.GetControllerName()+", *gin.Context)") {
+		//判断方法是否公开和方法类型
+		if method.IsExported() && method.Type.String() == methodType {
+			//把方法名转换为中横线，方便授权匹配
 			name := helper.CamelToLine(method.Name)
 			r.Actions[name] = &action{
 				Name:          name,
@@ -120,9 +144,13 @@ func (r *Resolve) ReflectActions(controller AppInterface) {
 		}
 	}
 }
+
+// ResolveAction 获取方法中横线名称
 func (r Resolve) ResolveAction(action string) string {
 	return helper.CamelToLine(action)
 }
+
+// ResolveVerb 获取方法请求方式
 func (r Resolve) ResolveVerb(verbs map[string][]string, action string) []string {
 	if verbs == nil {
 		return []string{
@@ -144,6 +172,7 @@ func (r Resolve) ResolveVerb(verbs map[string][]string, action string) []string 
 	return actionVerbs
 }
 
+// ResolveAuthenticator 获取方法登录权限配置
 func (r Resolve) ResolveAuthenticator(authenticator Authenticator, action string) string {
 	if len(authenticator.Excepts) > 0 {
 		_, result := helper.IsInSlice(authenticator.Excepts, action)
@@ -152,8 +181,6 @@ func (r Resolve) ResolveAuthenticator(authenticator Authenticator, action string
 		}
 	}
 	if len(authenticator.Optionals) > 0 {
-		fmt.Println(authenticator.Optionals)
-		fmt.Println(action)
 		_, result := helper.IsInSlice(authenticator.Optionals, action)
 		if result {
 			return Optional

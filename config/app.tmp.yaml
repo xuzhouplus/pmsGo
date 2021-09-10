@@ -40,10 +40,6 @@ web:
     salt: "xcvmnbiufs"
   host: "http://web.pms.test"
   connects: [ alipay,github,baidu,gitee ]
-  auth:
-    admin:
-      except: [ ]
-      optional: [ login,auth,logout,authorize,authorize-url,callback,authorize-user ]
   upload:
     path: "D:\\GoCode\\src\\pmsGo\\public\\upload"
     url: "http://web.pms.test/go/public/upload"
