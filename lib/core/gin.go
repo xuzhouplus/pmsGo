@@ -2,6 +2,8 @@ package core
 
 import (
 	"github.com/gin-gonic/gin"
+	"net/http"
+	_ "net/http/pprof"
 	"pmsGo/lib/controller"
 	"pmsGo/lib/middleware/auth"
 	"strings"
@@ -67,6 +69,7 @@ func (e *Engine) Router(appInterface controller.AppInterface) {
 		}
 	}
 }
+
 // Start 启动服务
 func (e *Engine) Start(listen string) error {
 	//监听端口
@@ -75,4 +78,10 @@ func (e *Engine) Start(listen string) error {
 		return err
 	}
 	return nil
+}
+
+func (e Engine) Pprof(listen string) {
+	go func() {
+		http.ListenAndServe(listen, nil)
+	}()
 }

@@ -8,8 +8,8 @@ import (
 	"pmsGo/lib/config"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
-	model2 "pmsGo/model"
-	service2 "pmsGo/service"
+	"pmsGo/model"
+	"pmsGo/service"
 )
 
 const BaiduGatewayType = "baidu"
@@ -39,19 +39,19 @@ type BaiduAccessTokenResponse struct {
 }
 
 type Baidu struct {
-	BaiduApiKei    string
+	BaiduApiKey    string
 	BaiduSecretKey string
 }
 
 func NewBaidu() (*Baidu, error) {
 	baiduGateway := &Baidu{}
-	baiduGateway.BaiduApiKei = service2.SettingService.GetSetting(model2.SettingKeyBaiduApiKey)
-	if baiduGateway.BaiduApiKei == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyBaiduApiKey)
+	baiduGateway.BaiduApiKey = service.SettingService.GetSetting(model.SettingKeyBaiduApiKey)
+	if baiduGateway.BaiduApiKey == "" {
+		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyBaiduApiKey)
 	}
-	secretKey := service2.SettingService.GetSetting(model2.SettingKeyBaiduSecretKey)
+	secretKey := service.SettingService.GetSetting(model.SettingKeyBaiduSecretKey)
 	if secretKey == "" {
-		return nil, fmt.Errorf("缺少配置：%v", model2.SettingKeyBaiduSecretKey)
+		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyBaiduSecretKey)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(secretKey), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {
@@ -73,7 +73,7 @@ func (gateway Baidu) AuthorizeUrl(scope string, redirect string, state string) (
 	}
 	uri := url.URL{}
 	query := uri.Query()
-	query.Add("client_id", gateway.BaiduApiKei)
+	query.Add("client_id", gateway.BaiduApiKey)
 	query.Add("response_type", "code")
 	query.Add("redirect_uri", redirect)
 	query.Add("scope", scope)
@@ -95,7 +95,7 @@ func (gateway Baidu) AccessToken(callbackData map[string]string, redirect string
 		Query: map[string]string{
 			"grant_type":    gateway.GrantType(),
 			"code":          callbackData["code"],
-			"client_id":     gateway.BaiduApiKei,
+			"client_id":     gateway.BaiduApiKey,
 			"client_secret": gateway.BaiduSecretKey,
 			"redirect_uri":  redirect,
 		},

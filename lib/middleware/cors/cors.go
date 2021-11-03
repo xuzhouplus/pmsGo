@@ -8,7 +8,6 @@ import (
 // Register 允许跨域
 func Register() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		method := c.Request.Method
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Headers", "Access-Control-Allow-Headers,Authorization,User-Agent, Keep-Alive, Content-Type, X-Requested-With,X-CSRF-Token,AccessToken,Token")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, PATCH, OPTIONS")
@@ -16,7 +15,7 @@ func Register() gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Credentials", "true")
 
 		// 放行所有OPTIONS方法
-		if method == "OPTIONS" {
+		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusAccepted)
 		}
 		c.Next()

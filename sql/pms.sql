@@ -1,3 +1,19 @@
+/*
+ Navicat Premium Data Transfer
+
+ Source Server         : Homestead
+ Source Server Type    : MySQL
+ Source Server Version : 80026
+ Source Host           : 127.0.0.1:3306
+ Source Schema         : pms
+
+ Target Server Type    : MySQL
+ Target Server Version : 80026
+ File Encoding         : 65001
+
+ Date: 03/11/2021 17:56:13
+*/
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -19,7 +35,7 @@ CREATE TABLE `pms_admins`  (
   `auth_key` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uuid`(`uuid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '管理账号' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '管理账号' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pms_admins
@@ -46,7 +62,7 @@ CREATE TABLE `pms_carousels`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uuid`(`uuid`) USING BTREE,
   INDEX `OrderIndex`(`order`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '首页幻灯片' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '首页幻灯片' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pms_carousels
@@ -69,7 +85,7 @@ CREATE TABLE `pms_connects`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `union_id`(`union_id`) USING BTREE,
   INDEX `admin_id`(`admin_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '第三方账号互联' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '第三方账号互联' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pms_connects
@@ -90,7 +106,7 @@ CREATE TABLE `pms_files`  (
   `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '说明',
   `preview` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预览图',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文件管理' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文件管理' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pms_files
@@ -104,7 +120,7 @@ CREATE TABLE `pms_migration`  (
   `version` varchar(180) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `apply_time` int NULL DEFAULT NULL,
   PRIMARY KEY (`version`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pms_migration
@@ -127,7 +143,7 @@ CREATE TABLE `pms_posts`  (
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uuid`(`uuid`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '稿件' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '稿件' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pms_posts
@@ -150,7 +166,7 @@ CREATE TABLE `pms_settings`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `key`(`key`) USING BTREE,
   UNIQUE INDEX `name`(`name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 37 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pms_settings
@@ -190,5 +206,7 @@ INSERT INTO `pms_settings` VALUES (32, 'carousel_interval', '轮播图间隔时�
 INSERT INTO `pms_settings` VALUES (34, 'gitee_application_name', '码云应用名称', 'input', 1, '', NULL, 1, NULL);
 INSERT INTO `pms_settings` VALUES (35, 'gitee_app_id', '码云 Client ID', 'input', 1, '', NULL, 1, NULL);
 INSERT INTO `pms_settings` VALUES (36, 'gitee_app_secret', '码云 Client Secret', 'input', 1, '', NULL, 1, NULL);
+INSERT INTO `pms_settings` VALUES (37, 'baidu_app_name', '百度应用名称', 'input', 1, NULL, NULL, 1, NULL);
+INSERT INTO `pms_settings` VALUES (38, 'baidu_pan_availability', '百度网盘', 'select', 1, NULL, '{\"disabled\":\"\\u7981\\u7528\",\"enabled\":\"\\u542f\\u7528\"}', 1, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
