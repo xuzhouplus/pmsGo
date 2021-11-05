@@ -13,7 +13,7 @@ import (
 )
 
 const BaiduGatewayType = "baidu"
-const BaiduUserScope = "basic,netdisk"
+const BaiduUserScope = "basic"
 const BaiduGrantType = "authorization_code"
 const BaiduAuthorizeDisplay = "page"
 

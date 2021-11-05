@@ -16,6 +16,8 @@ import (
 	"pmsGo/service"
 )
 
+const AdminAuthorizeSessionKey = "admin_authorize_session"
+
 type admin struct {
 	controller.AppController
 }
@@ -30,10 +32,6 @@ func (ctl admin) Verbs() map[string][]string {
 	verbs["logout"] = []string{controller.Post}
 	verbs["profile"] = []string{controller.Post, controller.Get}
 	verbs["connects"] = []string{controller.Get}
-	verbs["authorize"] = []string{controller.Get}
-	verbs["authorize-url"] = []string{controller.Get}
-	verbs["callback"] = []string{controller.Get}
-	verbs["authorize-user"] = []string{controller.Get}
 	return verbs
 }
 
@@ -41,7 +39,7 @@ func (ctl admin) Verbs() map[string][]string {
 func (ctl admin) Authenticator() controller.Authenticator {
 	authenticator := controller.Authenticator{
 		Excepts:   []string{},
-		Optionals: []string{"login", "auth", "logout", "authorize", "authorize-url", "callback", "authorize-user"},
+		Optionals: []string{"login", "auth", "logout"},
 	}
 	return authenticator
 }
@@ -167,10 +165,18 @@ func (ctl admin) Connects(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, ctl.Response(controller.CodeOk, nil, "获取失败"))
 		return
 	}
-	loginAdmin = loginData.(map[string]interface{})
-	connects, err := service.AdminService.GetBoundConnects(loginAdmin["account"].(string))
-	if err != nil {
+	loginSettings := service.SettingService.GetLoginSettings()
+	if len(loginSettings) == 0 {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
+		return
+	}
+	loginAdmin = loginData.(map[string]interface{})
+	connects, err := service.AdminService.GetBoundConnects(loginAdmin["account"].(string), loginSettings)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, map[string]interface{}{
+			"types":    loginSettings,
+			"connects": nil,
+		}, "获取失败"))
 		return
 	}
 	returnData := make(map[string]model.Connect)
@@ -179,15 +185,14 @@ func (ctl admin) Connects(ctx *gin.Context) {
 			returnData[connect.Type] = connect
 		}
 	}
-	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnData, "获取成功"))
+	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, map[string]interface{}{
+		"types":    loginSettings,
+		"connects": returnData,
+	}, "获取成功"))
 }
 
-func (ctl admin) Authorize(ctx *gin.Context) {
-	ctl.AuthorizeUrl(ctx)
-}
-
-// AuthorizeUrl 获取第三方oauth授权地址
-func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
+// Url 获取授权地址
+func (ctl admin) Url(ctx *gin.Context) {
 	gatewayType := ctx.Query("type")
 	oauthGateway, err := oauth.NewOauth(gatewayType)
 	if err != nil {
@@ -221,7 +226,7 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
-	session.Set("authorize", encode)
+	session.Set(AdminAuthorizeSessionKey, encode)
 	err = session.Save()
 	if err != nil {
 		log.Println(err)
@@ -231,12 +236,8 @@ func (ctl admin) AuthorizeUrl(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, authorizeUrl, "获取成功"))
 }
 
+// Callback oauth授权回调
 func (ctl admin) Callback(ctx *gin.Context) {
-	ctl.AuthorizeUser(ctx)
-}
-
-// AuthorizeUser 第三方oauth回调
-func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 	requestData := ctx.Request.URL.Query()
 	if len(requestData) == 0 {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
@@ -247,7 +248,7 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 		callbackData[field] = strings[0]
 	}
 	session := sessions.Default(ctx)
-	sessionData := session.Get("authorize")
+	sessionData := session.Get(AdminAuthorizeSessionKey)
 	if sessionData == nil {
 		log.Println("授权数据为空")
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))
@@ -277,8 +278,6 @@ func (ctl admin) AuthorizeUser(ctx *gin.Context) {
 			return
 		}
 	} else {
-		log.Println(callbackData["state"])
-		log.Println(callbackData["state"])
 		if callbackData["state"] != authorizeData["state"] {
 			log.Println("授权数据state无效")
 			ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "请求错误"))

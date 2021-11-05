@@ -108,7 +108,7 @@ func (service Admin) Update(postData map[string]interface{}) (*model.Admin, erro
 	return admin, nil
 }
 
-func (service Admin) GetBoundConnects(account string) ([]model.Connect, error) {
+func (service Admin) GetBoundConnects(account string, types []string) ([]model.Connect, error) {
 	admin, err := service.FindOneByAccount(account, 0)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,11 @@ func (service Admin) GetBoundConnects(account string) ([]model.Connect, error) {
 	var connects []model.Connect
 	connectModel := &model.Connect{}
 	connect := connectModel.DB()
-	result := connect.Where("admin_id = ?", admin.ID).Find(&connects)
+	connect.Where("admin_id = ?", admin.ID)
+	if len(types) > 0 {
+		connect.Where("type in ?", types)
+	}
+	result := connect.Find(&connects)
 	if result.Error != nil {
 		return nil, result.Error
 	}

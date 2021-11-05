@@ -9,7 +9,7 @@ import (
 
 type Oauth struct {
 	Type     string
-	Instance gateway.Gateway
+	Gateway gateway.Gateway
 }
 
 func NewOauth(gatewayType string) (*Oauth, error) {
@@ -42,7 +42,7 @@ func NewOauth(gatewayType string) (*Oauth, error) {
 	if err != nil {
 		return nil, err
 	}
-	oauth := &Oauth{Type: gatewayType, Instance: gatewayInstance}
+	oauth := &Oauth{Type: gatewayType, Gateway: gatewayInstance}
 	return oauth, nil
 }
 func (oauth Oauth) AuthorizeUrl(scope string, redirect string) (string, string, error) {
@@ -50,17 +50,17 @@ func (oauth Oauth) AuthorizeUrl(scope string, redirect string) (string, string, 
 	if oauth.Type != gateway.TwitterGatewayType {
 		state = random.Uuid(false)
 	}
-	return oauth.Instance.AuthorizeUrl(scope, redirect, state)
+	return oauth.Gateway.AuthorizeUrl(scope, redirect, state)
 }
 func (oauth Oauth) AccessToken(callbackData map[string]string, redirect string) (string, error) {
-	token, err := oauth.Instance.AccessToken(callbackData, redirect)
+	token, err := oauth.Gateway.AccessToken(callbackData, redirect)
 	if err != nil {
 		return "", err
 	}
 	return token, nil
 }
 func (oauth Oauth) User(accessToken string) (*user.User, error) {
-	auth, err := oauth.Instance.User(accessToken)
+	auth, err := oauth.Gateway.User(accessToken)
 	if err != nil {
 		return nil, err
 	}

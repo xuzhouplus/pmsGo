@@ -39,7 +39,7 @@ web:
     primaryKey: "config\\rsa_1024_priv.pem"
     salt: "xcvmnbiufs"
   host: "http://web.pms.test"
-  connects: [ alipay,github,baidu,gitee ]
+  connects: [ alipay,github,baidu,gitee,facebook,google,line,qq,twitter,wechat,weibo]
   upload:
     path: "D:\\GoCode\\pmsGo\\public\\upload"
     url: "http://web.pms.test/go/public/upload"

@@ -4,6 +4,7 @@ import (
 	"github.com/idoubi/goz"
 	"log"
 	"net/url"
+	"pmsGo/lib/nas/gateway"
 )
 
 const UserScope = "basic,netdisk"
@@ -16,40 +17,22 @@ const (
 	AccessUserUrl  = "https://openapi.baidu.com/rest/2.0/passport/users/getInf"
 )
 
-type AccessTokenRequest struct {
-	GrantType    string `json:"grant_type"`
-	Code         string `json:"code"`
-	ClientId     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	RedirectUri  string `json:"redirect_uri"`
-}
-
-type AccessTokenResponse struct {
-	AccessToken  string `json:"access_token"`
-	ExpiresIn    int64  `json:"expires_in"`
-	RefreshToken string `json:"refresh_token"`
-	Scope        string `json:"scope"`
-}
-
-func Authorize(scope string, redirect string, state string) (string, string, error) {
-	if scope == "" {
-		scope = UserScope
-	}
+func (service baidu) Authorize(redirect string, state string) (string, error) {
 	uri := url.URL{}
 	query := uri.Query()
-	query.Add("client_id", Baidu.BaiduApiKei)
+	query.Add("client_id", service.BaiduApiKey)
 	query.Add("response_type", "code")
 	query.Add("redirect_uri", redirect)
-	query.Add("scope", scope)
+	query.Add("scope", UserScope)
 	query.Add("state", state)
 	query.Add("display", AuthorizeDisplay)
 	query.Add("force_login", "1")
 	query.Add("qrcode", "1")
 	queryString := query.Encode()
-	return AuthorizeUrl + "?" + queryString, state, nil
+	return AuthorizeUrl + "?" + queryString, nil
 }
 
-func AccessToken(callbackData map[string]string, redirect string) (*AccessTokenResponse, error) {
+func (service baidu) AccessToken(callbackData map[string]string, redirect string) (*gateway.AccessToken, error) {
 	client := goz.NewClient()
 	response, err := client.Get(AccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
@@ -59,8 +42,8 @@ func AccessToken(callbackData map[string]string, redirect string) (*AccessTokenR
 		Query: map[string]string{
 			"grant_type":    GrantType,
 			"code":          callbackData["code"],
-			"client_id":     Baidu.BaiduApiKei,
-			"client_secret": Baidu.BaiduSecretKey,
+			"client_id":     service.BaiduApiKey,
+			"client_secret": service.BaiduSecretKey,
 			"redirect_uri":  redirect,
 		},
 	})
@@ -71,7 +54,7 @@ func AccessToken(callbackData map[string]string, redirect string) (*AccessTokenR
 	if err != nil {
 		return nil, err
 	}
-	accessTokenResponse := &AccessTokenResponse{}
+	accessTokenResponse := &gateway.AccessToken{}
 	accessTokenResponse.AccessToken = body.Get("access_token").String()
 	accessTokenResponse.RefreshToken = body.Get("refresh_token").String()
 	accessTokenResponse.ExpiresIn = body.Get("expires_in").Int()
@@ -79,7 +62,7 @@ func AccessToken(callbackData map[string]string, redirect string) (*AccessTokenR
 	return accessTokenResponse, nil
 }
 
-func FreshToken(refreshToken string) (*AccessTokenResponse, error) {
+func (service baidu) FreshToken(refreshToken string) (*gateway.AccessToken, error) {
 	client := goz.NewClient()
 	response, err := client.Get(AccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
@@ -89,8 +72,8 @@ func FreshToken(refreshToken string) (*AccessTokenResponse, error) {
 		Query: map[string]string{
 			"grant_type":    "refresh_token",
 			"refresh_token": refreshToken,
-			"client_id":     Baidu.BaiduApiKei,
-			"client_secret": Baidu.BaiduSecretKey,
+			"client_id":     service.BaiduApiKey,
+			"client_secret": service.BaiduSecretKey,
 		},
 	})
 	if err != nil {
@@ -100,14 +83,15 @@ func FreshToken(refreshToken string) (*AccessTokenResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	accessTokenResponse := &AccessTokenResponse{}
+	accessTokenResponse := &gateway.AccessToken{}
 	accessTokenResponse.AccessToken = body.Get("access_token").String()
 	accessTokenResponse.RefreshToken = body.Get("refresh_token").String()
 	accessTokenResponse.ExpiresIn = body.Get("expires_in").Int()
 	accessTokenResponse.Scope = body.Get("scope").String()
 	return accessTokenResponse, nil
 }
-func User(accessToken string) (map[string]string, error) {
+
+func (service baidu) User(accessToken string) (*gateway.User, error) {
 	client := goz.NewClient()
 	response, err := client.Get(AccessUserUrl, goz.Options{
 		Query: map[string]string{
@@ -123,12 +107,13 @@ func User(accessToken string) (map[string]string, error) {
 		return nil, err
 	}
 	log.Println(body)
-	return map[string]string{
-		"avatar":   body.Get("portrait").String(),
-		"channel":  "0",
-		"nickname": body.Get("username").String(),
-		"gender":   body.Get("sex").String(),
-		"open_id":  body.Get("openid").String(),
-		"union_id": body.Get("unionid").String(),
+	return &gateway.User{
+		OpenId:   body.Get("openid").String(),
+		UnionId:  body.Get("unionid").String(),
+		Channel:  "0",
+		Nickname: body.Get("username").String(),
+		Gender:   body.Get("sex").String(),
+		Avatar:   body.Get("portrait").String(),
+		Type:     GatewayType,
 	}, nil
 }

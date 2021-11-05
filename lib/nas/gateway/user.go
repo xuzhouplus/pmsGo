@@ -1,8 +1,6 @@
-package user
+package gateway
 
 type User struct {
-	AccessToken  string `json:"_"`        //授权token
-	RefreshToken string `json:"_"`        //刷新token
 	OpenId       string `json:"open_id"`  //用户唯一id
 	UnionId      string `json:"union_id"` //微信union_id
 	Channel      string `json:"channel"`  //登录类型

@@ -3,7 +3,6 @@ package baidu
 import (
 	"fmt"
 	"pmsGo/lib/config"
-	"pmsGo/lib/log"
 	"pmsGo/lib/security/base64"
 	"pmsGo/lib/security/encrypt"
 	"pmsGo/model"
@@ -52,28 +51,27 @@ type QuotaResponse struct {
 }
 
 type baidu struct {
-	BaiduAppName    string
+	BaiduAppName   string
 	BaiduApiKey    string
 	BaiduSecretKey string
 }
 
-var Baidu *baidu
+const GatewayType = "baidu"
 
-func init() {
-	Baidu := &baidu{}
-	Baidu.BaiduApiKey = service.SettingService.GetSetting(model.SettingKeyBaiduApiKey)
-	if Baidu.BaiduApiKey == "" {
-		log.Error(fmt.Errorf("缺少配置：%v", model.SettingKeyBaiduApiKey))
-		return
+func NewBaidu() (*baidu, error) {
+	client := &baidu{}
+	client.BaiduApiKey = service.SettingService.GetSetting(model.SettingKeyBaiduApiKey)
+	if client.BaiduApiKey == "" {
+		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyBaiduApiKey)
 	}
 	secretKey := service.SettingService.GetSetting(model.SettingKeyBaiduSecretKey)
 	if secretKey == "" {
-		log.Error(fmt.Errorf("缺少配置：%v", model.SettingKeyBaiduSecretKey))
-		return
+		return nil, fmt.Errorf("缺少配置：%v", model.SettingKeyBaiduApiKey)
 	}
 	decrypt, err := encrypt.Decrypt(base64.Decode(secretKey), []byte(config.Config.Web.Security["salt"]))
 	if err != nil {
-		log.Error(err)
+		return nil, err
 	}
-	Baidu.BaiduSecretKey = string(decrypt)
+	client.BaiduSecretKey = string(decrypt)
+	return client, nil
 }
