@@ -22,6 +22,7 @@ func (ctl carousel) Verbs() map[string][]string {
 	verbs["index"] = []string{controller.Get}
 	verbs["list"] = []string{controller.Get}
 	verbs["create"] = []string{controller.Post}
+	verbs["update"] = []string{controller.Post}
 	verbs["delete"] = []string{controller.Post}
 	verbs["preview"] = []string{controller.Post}
 	return verbs
@@ -30,7 +31,6 @@ func (ctl carousel) Verbs() map[string][]string {
 func (ctl carousel) Authenticator() controller.Authenticator {
 	authenticator := controller.Authenticator{
 		Excepts:   []string{"index"},
-		Optionals: []string{"list", "create", "delete", "preview"},
 	}
 	return authenticator
 }
@@ -62,7 +62,11 @@ func (ctl carousel) List(ctx *gin.Context) {
 
 func (ctl carousel) Create(ctx *gin.Context) {
 	requestData := make(map[string]interface{})
-	ctx.ShouldBind(&requestData)
+	err := ctx.ShouldBind(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
+		return
+	}
 	requestFileId := requestData["file_id"]
 	fileId := requestFileId.(float64)
 	requestTitle := requestData["title"]
@@ -74,6 +78,35 @@ func (ctl carousel) Create(ctx *gin.Context) {
 	requestOrder := requestData["order"]
 	order := requestOrder.(float64)
 	carousel, err := service.CarouselService.Create(int(fileId), title, description, link, int(order))
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
+		return
+	}
+	carousel.Url = image.FullUrl(carousel.Url)
+	carousel.Thumb = image.FullUrl(carousel.Thumb)
+	ctx.JSON(http.StatusOK, ctl.ResponseOk(carousel, "success"))
+}
+
+func (ctl carousel) Update(ctx *gin.Context) {
+	requestData := make(map[string]interface{})
+	err := ctx.ShouldBind(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
+		return
+	}
+	requestId := requestData["id"]
+	id := requestId.(float64)
+	requestFileId := requestData["file_id"]
+	fileId := requestFileId.(float64)
+	requestTitle := requestData["title"]
+	title := requestTitle.(string)
+	requestDescription := requestData["description"]
+	description := requestDescription.(string)
+	requestLink := requestData["link"]
+	link := requestLink.(string)
+	requestOrder := requestData["order"]
+	order := requestOrder.(float64)
+	carousel, err := service.CarouselService.Update(int(id),int(fileId), title, description, link, int(order))
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return

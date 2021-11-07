@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"pmsGo/lib/image"
 	"pmsGo/lib/security/random"
 	"pmsGo/model"
@@ -44,6 +45,33 @@ func (service Carousel) List(page interface{}, size interface{}, fields interfac
 	}
 	return carousels, nil
 }
+
+func (service Carousel) CreateFiles(fileId int) (map[string]interface{}, error) {
+	file, err := FileService.FindOne(fileId)
+	if err != nil {
+		return nil, err
+	}
+	srcImage, err := image.Open(image.FullPath(file.Path))
+	if err != nil {
+		return nil, err
+	}
+	carouselFile, err := srcImage.CreateCarousel(1920, 1080, "jpg")
+	if err != nil {
+		return nil, err
+	}
+	thumb, err := carouselFile.CreateThumb(320, 180, "")
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"type":   file.Type,
+		"url":    image.RelativePath(image.Path(carouselFile.FullPath())),
+		"thumb":  image.RelativePath(image.Path(thumb.FullPath())),
+		"height": carouselFile.Height,
+		"width":  carouselFile.Width,
+	}, nil
+}
+
 func (service Carousel) Create(fileId int, title string, description string, link string, order int) (*model.Carousel, error) {
 	carouselLimit, _ := strconv.Atoi(SettingService.GetSetting(model.SettingKeyCarouselLimit))
 	carouselModel := &model.Carousel{}
@@ -56,33 +84,21 @@ func (service Carousel) Create(fileId int, title string, description string, lin
 	if carouselLimit == int(count) {
 		return nil, errors.New("the carousels number is reached limit")
 	}
-	one, err := FileService.FindOne(fileId)
+	carousel := &model.Carousel{}
+	files, err := service.CreateFiles(fileId)
 	if err != nil {
 		return nil, err
 	}
-	carousel := &model.Carousel{}
-	carousel.Type = one.Type
+	carousel.Type = files["type"].(string)
+	carousel.Url = files["url"].(string)
+	carousel.Thumb = files["thumb"].(string)
+	carousel.Height = files["height"].(int)
+	carousel.Width = files["width"].(int)
+	carousel.FileId = fileId
 	carousel.Link = link
 	carousel.Title = title
 	carousel.Description = description
 	carousel.Order = order
-	srcImage, err := image.Open(image.FullPath(one.Path))
-	if err != nil {
-		return nil, err
-	}
-	carouselFile, err := srcImage.CreateCarousel(1920, 1080, "jpg")
-	if err != nil {
-		return nil, err
-	}
-	carousel.Url = image.RelativePath(image.Path(carouselFile.FullPath()))
-	thumb, err := carouselFile.CreateThumb(320, 180, "")
-	if err != nil {
-		return nil, err
-	}
-	carousel.Thumb = image.RelativePath(image.Path(thumb.FullPath()))
-	carousel.Height = carouselFile.Height
-	carousel.Width = carouselFile.Width
-	carousel.FileId = fileId
 	carousel.Uuid = random.Uuid(false)
 	result = connect.Create(&carousel)
 	if result.Error != nil {
@@ -94,6 +110,54 @@ func (service Carousel) Create(fileId int, title string, description string, lin
 	}
 	return carousel, nil
 }
+
+func (service Carousel) Update(id int, fileId int, title string, description string, link string, order int) (*model.Carousel, error) {
+	carousel := &model.Carousel{}
+	db := carousel.DB()
+	db.Where("id = ?", id)
+	db.Limit(1)
+	result := db.First(&carousel)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	db.Begin()
+	files, err := service.CreateFiles(fileId)
+	if err != nil {
+		return nil, err
+	}
+	carousel.Type = files["type"].(string)
+	carousel.Url = files["url"].(string)
+	carousel.Thumb = files["thumb"].(string)
+	carousel.Height = files["height"].(int)
+	carousel.Width = files["width"].(int)
+	carousel.FileId = fileId
+	carousel.Link = link
+	if title != "" {
+		carousel.Title = title
+	}
+	if description != "" {
+		carousel.Description = description
+	}
+	if order != 0 {
+		if carousel.Order != order {
+			err := service.UpdateOrder(carousel.Order, order)
+			if err != nil {
+				return nil, err
+			}
+		}
+		carousel.Order = order
+
+	}
+	connect := carousel.DB()
+	result = connect.Save(&carousel)
+	if result.Error != nil {
+		db.Rollback()
+		return nil, result.Error
+	}
+	db.Commit()
+	return carousel, nil
+}
+
 func (service Carousel) Preview(fileId int) (string, error) {
 	one, err := FileService.FindOne(fileId)
 	if err != nil {
@@ -128,6 +192,57 @@ func (service Carousel) Delete(id int) error {
 		return err
 	}
 	result = connect.Delete(&carousel)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func (service Carousel) FindById(id int) (*model.Carousel, error) {
+	one := &model.Carousel{}
+	connect := one.DB()
+	connect.Where("id = ?", id)
+	connect.Limit(1)
+	result := connect.First(&one)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return one, nil
+}
+
+func (service Carousel) FindByUuid(uuid string) (*model.Carousel, error) {
+	one := &model.Carousel{}
+	connect := one.DB()
+	connect.Where("uuid = ?", uuid)
+	connect.Limit(1)
+	result := connect.First(&one)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return one, nil
+}
+
+func (service Carousel) FindByOrder(order int) (*model.Carousel, error) {
+	one := &model.Carousel{}
+	connect := one.DB()
+	connect.Where("order = ?", order)
+	connect.Limit(1)
+	result := connect.First(&one)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return one, nil
+}
+
+func (service Carousel) UpdateOrder(from int, to int) error {
+	one := &model.Carousel{}
+	connect := one.DB()
+	var result *gorm.DB
+	if from < to {
+		result = connect.Where("order > ?", from).Where("order <= ?", to).Update("order", gorm.Expr("order - ?", 1))
+	} else {
+		result = connect.Where("order >= ?", to).Where("order < ?", from).Update("order", gorm.Expr("order + ?", 1))
+	}
 	if result.Error != nil {
 		return result.Error
 	}

@@ -8,7 +8,7 @@ import (
 type Carousel struct {
 	ID          int    `gorm:"private_key" json:"id"`
 	Uuid        string `gorm:"index" json:"uuid"`
-	FileId      int    `json:"field_id"`
+	FileId      int    `json:"file_id"`
 	Type        string `json:"type"`
 	Title       string `json:"title"`
 	Url         string `json:"url"`
@@ -26,23 +26,12 @@ func (model Carousel) DB() *gorm.DB {
 
 func (model *Carousel) SetOrder(order interface{}) error {
 	var carousels []Carousel
-	connect := database.DB.Begin()
+	connect := model.DB()
 	if order == nil {
-		result := connect.Model(&Carousel{}).Where("order > ?", model.Order).Find(&carousels)
-		if result.Error != nil {
-			return result.Error
-		}
-		for _, carousel := range carousels {
-			carousel.Order = carousel.Order - 1
-			result = connect.Save(&carousel)
-			if result.Error != nil {
-				connect.Rollback()
-				return result.Error
-			}
-		}
-		connect.Commit()
-		return nil
+		result := connect.Where("order >= ?", model.Order).Update("order", gorm.Expr("order + ?", 1))
+		return result.Error
 	}
+	connect.Begin()
 	orderInt := order.(int)
 	if orderInt < model.Order {
 		result := connect.Model(&Carousel{}).Where("order < ?", model.Order).Where("order > ?", orderInt-1).Find(&carousels)

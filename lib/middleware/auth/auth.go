@@ -61,34 +61,36 @@ func Auth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		//获取请求controller和action
 		controllerName, actionName := getRequest(ctx)
-		//获取认证配置
-		authType := getAuthType(controllerName, actionName)
-		log.Debugf("controller: %s ,action: %s ,auth: %s\n", controllerName, actionName, authType)
-		//如果不是不需要登录
-		if authType != controller.Except {
-			//获取登录用户信息
-			session := sessions.Default(ctx)
-			sessionAdmin := session.Get(SessionLoginAdminKey)
-			if sessionAdmin == nil {
-				//用户登录信息为空且认证类型不为可不登录，直接返回401
-				if authType == controller.Forbidden {
-					ctx.JSON(http.StatusUnauthorized, map[string]interface{}{
-						"code":    0,
-						"data":    nil,
-						"message": "Unauthorized",
-					})
-					ctx.Abort()
-					return
-				}
-			} else {
-				//有登录信息，把登录信息写入上下文环境中
-				loginAdmin := make(map[string]interface{})
-				err := json.Decode(sessionAdmin.(string), &loginAdmin)
-				if err != nil {
-					log.Errorf("解析session数据失败,%e", err)
+		if controllerName != "public" {
+			//获取认证配置
+			authType := getAuthType(controllerName, actionName)
+			log.Debugf("controller: %s ,action: %s ,auth: %s\n", controllerName, actionName, authType)
+			//如果不是不需要登录
+			if authType != controller.Except {
+				//获取登录用户信息
+				session := sessions.Default(ctx)
+				sessionAdmin := session.Get(SessionLoginAdminKey)
+				if sessionAdmin == nil {
+					//用户登录信息为空且认证类型不为可不登录，直接返回401
+					if authType == controller.Forbidden {
+						ctx.JSON(http.StatusUnauthorized, map[string]interface{}{
+							"code":    0,
+							"data":    nil,
+							"message": "Unauthorized",
+						})
+						ctx.Abort()
+						return
+					}
 				} else {
-					if loginAdmin != nil {
-						ctx.Set(ContextLoginAdminKey, loginAdmin)
+					//有登录信息，把登录信息写入上下文环境中
+					loginAdmin := make(map[string]interface{})
+					err := json.Decode(sessionAdmin.(string), &loginAdmin)
+					if err != nil {
+						log.Errorf("解析session数据失败,%e", err)
+					} else {
+						if loginAdmin != nil {
+							ctx.Set(ContextLoginAdminKey, loginAdmin)
+						}
 					}
 				}
 			}

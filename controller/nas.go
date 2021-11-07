@@ -8,11 +8,9 @@ import (
 	"pmsGo/lib/cache"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
-	"pmsGo/lib/middleware/auth"
 	nasLib "pmsGo/lib/nas"
 	"pmsGo/lib/security/json"
 	"pmsGo/lib/security/random"
-	"pmsGo/service"
 )
 
 const NasAuthorizeSessionKey = "nas_authorize_session"
@@ -141,9 +139,9 @@ func (ctl nas) Callback(ctx *gin.Context) {
 		return
 	}
 	returnAttr := make(map[string]string)
-	returnAttr["uuid"] = admin.Uuid
-	returnAttr["type"] = admin.Type
-	returnAttr["avatar"] = admin.Avatar
-	returnAttr["account"] = admin.Account
+	returnAttr["uuid"] = authorizeUser.UnionId
+	returnAttr["type"] = authorizeUser.Type
+	returnAttr["avatar"] = authorizeUser.Avatar
+	returnAttr["account"] = authorizeUser.Nickname
 	ctx.JSON(http.StatusOK, ctl.Response(controller.CodeOk, returnAttr, "登录成功"))
 }

@@ -37,7 +37,11 @@ func Streaming(accessToken string, path string, streamType string, adToken strin
 			"ltime":   body.Get("ltime").Int(),
 		}, nil
 	}
+	body, err := response.GetBody()
+	if err != nil {
+		return nil, err
+	}
 	return map[string]interface{}{
-		"m3u8": response.GetBody(),
+		"m3u8": body,
 	}, nil
 }
