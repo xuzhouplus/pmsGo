@@ -76,16 +76,22 @@ func (receiver Video) CreateThumb(width int, height int, ext string, time string
 	}
 	widthSpread := strconv.Itoa(width)
 	heightSpread := strconv.Itoa(height)
+	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + "_" + widthSpread + "_" + heightSpread + "." + ext
+	dir := filepath.Dir(path)
+	os.Mkdir(dir, 755)
+	videoProfile := "baseline"
+	outputFormat := "image2"
+	overwrite := true
+	videoFilter := "scale=" + widthSpread + ":" + heightSpread
+	vFrames := 1
 	opts := ffmpeg.Options{
-		ExtraArgs: map[string]interface{}{
-			"-y":       "",
-			"-f":       "image2",
-			"-ss":      time,
-			"-vframes": 1,
-			"-vf":      "scale=" + widthSpread + ":" + heightSpread,
-		},
+		VideoProfile: &videoProfile,
+		OutputFormat: &outputFormat,
+		SeekTime:     &time,
+		Overwrite:    &overwrite,
+		Vframes:      &vFrames,
+		VideoFilter:  &videoFilter,
 	}
-	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + "_" + widthSpread + "_" + heightSpread + "." + ext
 	_, err := receiver.ffmpeg.
 		Output(path).
 		WithOptions(opts).

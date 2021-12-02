@@ -2,12 +2,21 @@ package service
 
 import (
 	"errors"
+	"github.com/floostack/transcoder"
 	"math"
+	"pmsGo/lib/cache"
 	fileLib "pmsGo/lib/file"
 	imageLib "pmsGo/lib/file/image"
 	"pmsGo/lib/file/video"
 	"pmsGo/lib/sync"
 	"pmsGo/model"
+	"strconv"
+)
+
+const (
+	VideoProgressCacheKey = "progress:video"
+	ImageProgressCacheKey = "progress:image"
+	ProgressCacheTtl      = 60 * 60 * 24
 )
 
 type File struct {
@@ -147,9 +156,41 @@ func (service File) ProcessImage(image *model.File) {
 
 func (service File) ProcessVideo(image *model.File) {
 	sync.NewTask(image, func(uuid string, param interface{}) (string, error) {
-		imageModel := param.(*model.File)
-		video.Open(fileLib.FullUrl(imageModel.Path))
-
+		videoModel := param.(*model.File)
+		openedVideo, err := video.Open(fileLib.FullUrl(videoModel.Path))
+		if err != nil {
+			return uuid, err
+		}
+		//文件幅面大小
+		videoModel.Height = openedVideo.Height
+		videoModel.Width = openedVideo.Width
+		thumbFile, err := openedVideo.CreateThumb(320, 180, "jpg", "")
+		if err != nil {
+			return uuid, err
+		}
+		thumb, err := imageLib.Open(thumbFile)
+		if err != nil {
+			return uuid, err
+		}
+		videoModel.Thumb = fileLib.RelativePath(fileLib.Path(thumb.FullPath()))
+		openedVideo.CreateM3u8(720, 576, func(progresses <-chan transcoder.Progress) {
+			for progress := range progresses {
+				time, err := strconv.Atoi(progress.GetCurrentTime())
+				if err != nil {
+					time = 0
+				}
+				current := int(progress.GetProgress())
+				err = cache.Set(VideoProgressCacheKey+":"+strconv.Itoa(videoModel.ID), map[string]int{"current": current, "time": time}, ProgressCacheTtl)
+				if err != nil {
+					return
+				}
+			}
+		})
+		connect := videoModel.DB()
+		result := connect.Select("Height", "Width", "Thumb", "Preview").Updates(videoModel)
+		if result.Error != nil {
+			return uuid, result.Error
+		}
 		return uuid, nil
 	})
 }
