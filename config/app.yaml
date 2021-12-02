@@ -34,6 +34,9 @@ log:
   level: debug
   json: false
 
+sync:
+  processor: 2
+
 web:
   security:
     primaryKey: "config\\rsa_1024_priv.pem"
@@ -41,9 +44,17 @@ web:
   host: "http://web.pms.test"
   connects: [ alipay,github,baidu,gitee,facebook,google,line,qq,twitter,wechat,weibo]
   upload:
-    path: "D:\\GoCode\\pmsGo\\public\\upload"
+    path: "D:\\GoCode\\src\\pmsGo\\public\\upload"
     url: "http://web.pms.test/go/public/upload"
-    extensions: [ "*" ] #支持文件后缀
-    maxSize: "1024M" #最大单个文件大小
-    maxFiles: 10 #最大文件数量
-    mimeTypes: [ "*" ] #支持文件类型
+    video:
+      ffmpeg: "D:\\ffmpeg\\bin\\ffmpeg.exe" #ffmpeg bin文件地址
+      ffprobe: "D:\\ffmpeg\\bin\\ffprobe.exe" #ffprobe bin文件地址
+      extensions: [ "mp4" ] #支持文件后缀
+      maxSize: "1024M" #最大单个文件大小
+      maxFiles: 10 #最大文件数量
+      mimeTypes: [ "video/mp4" ] #支持文件类型
+    image:
+      extensions: [ "*" ] #支持文件后缀
+      maxSize: "1024M" #最大单个文件大小
+      maxFiles: 10 #最大文件数量
+      mimeTypes: [ "*" ] #支持文件类型

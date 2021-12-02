@@ -3,7 +3,10 @@ package service
 import (
 	"errors"
 	"math"
-	"pmsGo/lib/image"
+	fileLib "pmsGo/lib/file"
+	imageLib "pmsGo/lib/file/image"
+	"pmsGo/lib/file/video"
+	"pmsGo/lib/sync"
 	"pmsGo/model"
 )
 
@@ -39,9 +42,9 @@ func (service File) List(page int, limit int, fields []string, fileType string, 
 	}
 	if len(files) > 0 {
 		for i, f := range files {
-			f.Path = image.FullUrl(f.Path)
-			f.Thumb = image.FullUrl(f.Thumb)
-			f.Preview = image.FullUrl(f.Preview)
+			f.Path = fileLib.FullUrl(f.Path)
+			f.Thumb = fileLib.FullUrl(f.Thumb)
+			f.Preview = fileLib.FullUrl(f.Preview)
 			files[i] = f
 		}
 	}
@@ -57,52 +60,12 @@ func (service File) List(page int, limit int, fields []string, fileType string, 
 	return returnData, nil
 }
 
-func (service File) Upload(uploaded *image.Instance, name string, description string) (*model.File, error) {
+func (service File) Upload(uploaded *fileLib.Upload, name string, description string) (*model.File, error) {
 	fileModel := &model.File{}
 	fileModel.Name = name
 	fileModel.Description = description
-	fileModel.Path = image.RelativePath(uploaded.Path())
+	fileModel.Path = fileLib.RelativePath(uploaded.Path())
 	fileModel.Type = uploaded.MimeType
-	filePath := uploaded.Path()
-	fileImage, err := image.Open(string(filePath))
-	if err != nil {
-		return nil, err
-	}
-	fileModel.Width = fileImage.Width
-	fileModel.Height = fileImage.Height
-	channel := make(chan map[string]string, 2)
-	go func() {
-		thumb, err := fileImage.CreateThumb(320, 180, "jpg")
-		if err != nil {
-			channel <- map[string]string{"error": err.Error()}
-		} else {
-			thumb := image.RelativePath(image.Path(thumb.FullPath()))
-			channel <- map[string]string{"thumb": thumb}
-		}
-	}()
-	go func() {
-		preview, err := fileImage.CreatePreview(62)
-		if err != nil {
-			channel <- map[string]string{"error": err.Error()}
-		}else{
-			prev := image.RelativePath(image.Path(preview.FullPath()))
-			channel <- map[string]string{"preview": prev}
-		}
-	}()
-	for i := range channel {
-		if i["error"] != "" {
-			close(channel)
-			return nil, errors.New(i["error"])
-		}
-		if i["preview"] != "" {
-			fileModel.Preview = i["preview"]
-		} else if i["thumb"] != "" {
-			fileModel.Thumb = i["thumb"]
-		}
-		if fileModel.Preview != "" && fileModel.Thumb != "" {
-			close(channel)
-		}
-	}
 	connect := fileModel.DB()
 	result := connect.Create(&fileModel)
 	if result.Error != nil {
@@ -151,3 +114,42 @@ func (service File) Delete(id int) error {
 	return nil
 }
 
+func (service File) ProcessImage(image *model.File) {
+	sync.NewTask(image, func(uuid string, param interface{}) (string, error) {
+		imageModel := param.(*model.File)
+		openedImage, err := imageLib.Open(fileLib.FullUrl(imageModel.Path))
+		if err != nil {
+			return uuid, err
+		}
+		//文件幅面大小
+		imageModel.Height = openedImage.Height
+		imageModel.Width = openedImage.Width
+		//生成缩略图
+		thumb, err := openedImage.CreateThumb(320, 180, "jpg")
+		if err != nil {
+			return uuid, err
+		}
+		imageModel.Thumb = fileLib.RelativePath(fileLib.Path(thumb.FullPath()))
+		//生成预览图
+		preview, err := openedImage.CreatePreview(62)
+		if err != nil {
+			return uuid, err
+		}
+		imageModel.Preview = fileLib.RelativePath(fileLib.Path(preview.FullPath()))
+		connect := imageModel.DB()
+		result := connect.Select("Height", "Width", "Thumb", "Preview").Updates(imageModel)
+		if result.Error != nil {
+			return uuid, result.Error
+		}
+		return uuid, nil
+	})
+}
+
+func (service File) ProcessVideo(image *model.File) {
+	sync.NewTask(image, func(uuid string, param interface{}) (string, error) {
+		imageModel := param.(*model.File)
+		video.Open(fileLib.FullUrl(imageModel.Path))
+
+		return uuid, nil
+	})
+}

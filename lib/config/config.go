@@ -15,6 +15,7 @@ type config struct {
 	Cache    cache
 	Session  session
 	Log      log
+	Sync     sync
 	Web      Web
 }
 

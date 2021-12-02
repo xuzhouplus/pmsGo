@@ -43,7 +43,15 @@ web:
   upload:
     path: "D:\\GoCode\\src\\pmsGo\\public\\upload"
     url: "http://web.pms.test/go/public/upload"
-    extensions: [ "*" ] #支持文件后缀
-    maxSize: "1024M" #最大单个文件大小
-    maxFiles: 10 #最大文件数量
-    mimeTypes: [ "*" ] #支持文件类型
+    video:
+      ffmpeg: "\\bin\\ffmpeg" #ffmpeg bin文件地址
+      ffprobe: "\\bin\\ffprobe" #ffprobe bin文件地址
+      extensions: [ "mp4" ] #支持文件后缀
+      maxSize: "1024M" #最大单个文件大小
+      maxFiles: 10 #最大文件数量
+      mimeTypes: [ "video/mp4" ] #支持文件类型
+    image:
+      extensions: [ "jpg" ] #支持文件后缀
+      maxSize: "1024M" #最大单个文件大小
+      maxFiles: 10 #最大文件数量
+      mimeTypes: [ "image/jpeg" ] #支持文件类型

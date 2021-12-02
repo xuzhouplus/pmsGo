@@ -10,26 +10,21 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
+	"pmsGo/lib/file"
 	"strconv"
 	"strings"
 )
-
-type Image struct {
-	File      image.Image
-	Name      string `json:"name"`
-	Path      string `json:"path"`
-	Size      int64  `json:"size"`
-	MimeType  string `json:"mimeType"`
-	Extension string `json:"extension"`
-	Width     int    `json:"width"`
-	Height    int    `json:"height"`
-}
 
 const (
 	MimeTypeJpg  = "image/jpeg"
 	MimeTypeJpeg = "image/jpeg"
 	MimeTypePng  = "image/png"
 )
+
+type Image struct {
+	Image image.Image
+	file.File
+}
 
 func Open(file string) (*Image, error) {
 	open, err := imaging.Open(file, imaging.AutoOrientation(true))
@@ -40,7 +35,16 @@ func Open(file string) (*Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Image{File: open, Path: filepath.Dir(file), Name: stat.Name(), Extension: filepath.Ext(file), Size: stat.Size(), MimeType: mime.TypeByExtension(filepath.Ext(file)), Width: open.Bounds().Size().X, Height: open.Bounds().Size().Y}, nil
+	image := &Image{}
+	image.Image = open
+	image.Path = filepath.Dir(file)
+	image.Name = stat.Name()
+	image.Extension = filepath.Ext(file)
+	image.Size = string(stat.Size())
+	image.MimeType = mime.TypeByExtension(filepath.Ext(file))
+	image.Width = open.Bounds().Size().X
+	image.Height = open.Bounds().Size().Y
+	return image, nil
 }
 
 func (img Image) FileName() string {
@@ -52,11 +56,11 @@ func (img Image) FullPath() string {
 }
 
 func (img Image) Resize(width int, height int) *image.NRGBA {
-	return imaging.Resize(img.File, width, height, imaging.Lanczos)
+	return imaging.Resize(img.Image, width, height, imaging.Lanczos)
 }
 
 func (img Image) Cut(offsetX int, offsetY int, width int, height int) *image.NRGBA {
-	return imaging.Crop(img.File, image.Rectangle{Min: image.Pt(offsetX, offsetY), Max: image.Pt(int(math.Min(float64(offsetX+width), float64(img.Width))), int(math.Min(float64(offsetY+height), float64(img.Height))))})
+	return imaging.Crop(img.Image, image.Rectangle{Min: image.Pt(offsetX, offsetY), Max: image.Pt(int(math.Min(float64(offsetX+width), float64(img.Width))), int(math.Min(float64(offsetY+height), float64(img.Height))))})
 }
 
 func (img Image) CompressJPEG(quality int) (imaging.EncodeOption, error) {
@@ -75,7 +79,7 @@ func (img Image) CompressPNG(level png.CompressionLevel) (imaging.EncodeOption, 
 
 func (img Image) Convert(extension string) (*Image, error) {
 	target := img.Path + img.Name + extension
-	err := imaging.Save(img.File, target)
+	err := imaging.Save(img.Image, target)
 	if err != nil {
 		return nil, err
 	}
@@ -87,11 +91,11 @@ func (img Image) Convert(extension string) (*Image, error) {
 }
 
 func (img Image) Blur(sigma float64) *image.NRGBA {
-	return imaging.Blur(img.File, sigma)
+	return imaging.Blur(img.Image, sigma)
 }
 
 func (img Image) Save(filePath string, opt imaging.EncodeOption) (*Image, error) {
-	err := imaging.Save(img.File, filePath, opt)
+	err := imaging.Save(img.Image, filePath, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -112,15 +116,15 @@ func (img Image) CreateCarousel(width int, height int, extension string) (*Image
 	offsetY := 0
 	fgWidth := img.Width
 	fgHeight := img.Height
-	fg := img.File
+	fg := img.Image
 	if img.Width < width && img.Height > height {
 		fgWidth = height / img.Height * img.Width
 		offsetX = (width - fgWidth) / 2
-		fg = imaging.Fit(img.File, fgWidth, fgHeight, imaging.Lanczos)
+		fg = imaging.Fit(img.Image, fgWidth, fgHeight, imaging.Lanczos)
 	} else if img.Width > width && img.Height < height {
 		fgHeight = width / img.Width * img.Height
 		offsetY = (height - fgHeight) / 2
-		fg = imaging.Fit(img.File, fgWidth, fgHeight, imaging.Lanczos)
+		fg = imaging.Fit(img.Image, fgWidth, fgHeight, imaging.Lanczos)
 	} else if img.Width > width && img.Height > height {
 		widthScale := width / img.Width
 		heightScale := height / img.Height
@@ -131,7 +135,7 @@ func (img Image) CreateCarousel(width int, height int, extension string) (*Image
 			fgHeight = img.Height * widthScale
 			offsetY = (height - fgHeight) / 2
 		}
-		fg = imaging.Fit(img.File, fgWidth, fgHeight, imaging.Lanczos)
+		fg = imaging.Fit(img.Image, fgWidth, fgHeight, imaging.Lanczos)
 	} else {
 		offsetX = (width - img.Width) / 2
 		offsetY = (height - img.Height) / 2
@@ -153,7 +157,7 @@ func (img Image) CreateThumb(width int, height int, ext string) (*Image, error) 
 	if ext == "" {
 		ext = strings.TrimPrefix(img.Extension, ".")
 	}
-	fg := imaging.Fit(img.File, width, height, imaging.Lanczos)
+	fg := imaging.Fit(img.Image, width, height, imaging.Lanczos)
 	var bg *image.NRGBA
 	if ext == "png" {
 		bg = imaging.New(width, height, color.NRGBA{})

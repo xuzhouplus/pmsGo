@@ -3,7 +3,7 @@ package model
 import (
 	"gorm.io/gorm"
 	"pmsGo/lib/database"
-	"pmsGo/lib/image"
+	fileLib "pmsGo/lib/file"
 )
 
 type File struct {
@@ -22,11 +22,11 @@ func (model File) DB() *gorm.DB {
 	return database.DB.Model(&model)
 }
 func (model File) RemoveFile() error {
-	return image.Remove(image.FullPath(model.Path))
+	return fileLib.Remove(fileLib.FullPath(model.Path))
 }
 func (model File) RemoveThumb() error {
-	return image.Remove(image.FullPath(model.Thumb))
+	return fileLib.Remove(fileLib.FullPath(model.Thumb))
 }
 func (model File) RemovePreview() error {
-	return image.Remove(image.FullPath(model.Preview))
+	return fileLib.Remove(fileLib.FullPath(model.Preview))
 }
