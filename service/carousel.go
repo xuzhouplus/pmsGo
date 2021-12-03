@@ -3,7 +3,8 @@ package service
 import (
 	"errors"
 	"gorm.io/gorm"
-	"pmsGo/lib/image"
+	fileLib "pmsGo/lib/file"
+	"pmsGo/lib/file/image"
 	"pmsGo/lib/security/random"
 	"pmsGo/model"
 	"strconv"
@@ -39,8 +40,8 @@ func (service Carousel) List(page interface{}, size interface{}, fields interfac
 		return carousels, errors.New("获取轮播图列表失败")
 	}
 	for i, carousel := range carousels {
-		carousel.Url = image.FullUrl(carousel.Url)
-		carousel.Thumb = image.FullUrl(carousel.Thumb)
+		carousel.Url = fileLib.FullUrl(carousel.Url)
+		carousel.Thumb = fileLib.FullUrl(carousel.Thumb)
 		carousels[i] = carousel
 	}
 	return carousels, nil
@@ -51,7 +52,7 @@ func (service Carousel) CreateFiles(fileId int) (map[string]interface{}, error) 
 	if err != nil {
 		return nil, err
 	}
-	srcImage, err := image.Open(image.FullPath(file.Path))
+	srcImage, err := image.Open(fileLib.FullPath(file.Path))
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +66,8 @@ func (service Carousel) CreateFiles(fileId int) (map[string]interface{}, error) 
 	}
 	return map[string]interface{}{
 		"type":   file.Type,
-		"url":    image.RelativePath(image.Path(carouselFile.FullPath())),
-		"thumb":  image.RelativePath(image.Path(thumb.FullPath())),
+		"url":    fileLib.RelativePath(fileLib.Path(carouselFile.FullPath())),
+		"thumb":  fileLib.RelativePath(fileLib.Path(thumb.FullPath())),
 		"height": carouselFile.Height,
 		"width":  carouselFile.Width,
 	}, nil
@@ -163,7 +164,7 @@ func (service Carousel) Preview(fileId int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	open, err := image.Open(image.FullPath(one.Preview))
+	open, err := image.Open(fileLib.FullPath(one.Preview))
 	if err != nil {
 		return "", err
 	}
@@ -171,7 +172,7 @@ func (service Carousel) Preview(fileId int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return image.FullUrl(image.RelativePath(image.Path(carousel.FullPath()))), nil
+	return fileLib.FullUrl(fileLib.RelativePath(fileLib.Path(carousel.FullPath()))), nil
 }
 
 func (service Carousel) Delete(id int) error {
@@ -183,11 +184,11 @@ func (service Carousel) Delete(id int) error {
 	if result.Error != nil {
 		return result.Error
 	}
-	err := image.Remove(image.FullPath(carousel.Url))
+	err := fileLib.Remove(fileLib.FullPath(carousel.Url))
 	if err != nil {
 		return err
 	}
-	err = image.Remove(image.FullPath(carousel.Thumb))
+	err = fileLib.Remove(fileLib.FullPath(carousel.Thumb))
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package video
 
 import (
+	"fmt"
 	"github.com/floostack/transcoder"
 	"github.com/floostack/transcoder/ffmpeg"
 	"mime"
@@ -70,46 +71,44 @@ func (receiver Video) FileName() string {
 	return strings.TrimSuffix(receiver.Name, receiver.Extension)
 }
 
-func (receiver Video) CreateThumb(width int, height int, ext string, time string) (string, error) {
+type Progress func(<-chan transcoder.Progress)
+
+func (receiver Video) CreateThumb(width int, height int, ext string, time string, progress Progress) (string, error) {
 	if time == "" {
 		time = "00:00:00"
 	}
 	widthSpread := strconv.Itoa(width)
 	heightSpread := strconv.Itoa(height)
-	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + "_" + widthSpread + "_" + heightSpread + "." + ext
+	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + widthSpread + "_" + heightSpread + "." + ext
 	dir := filepath.Dir(path)
-	os.Mkdir(dir, 755)
-	videoProfile := "baseline"
+	os.Mkdir(dir, 775)
 	outputFormat := "image2"
 	overwrite := true
 	videoFilter := "scale=" + widthSpread + ":" + heightSpread
-	vFrames := 1
 	opts := ffmpeg.Options{
-		VideoProfile: &videoProfile,
 		OutputFormat: &outputFormat,
 		SeekTime:     &time,
 		Overwrite:    &overwrite,
-		Vframes:      &vFrames,
 		VideoFilter:  &videoFilter,
 	}
-	_, err := receiver.ffmpeg.
+	progressChannel, err := receiver.ffmpeg.
 		Output(path).
 		WithOptions(opts).
 		Start(opts)
 	if err != nil {
+		fmt.Printf("%v\n", err)
 		return "", err
 	}
+	progress(progressChannel)
 	return path, nil
 }
-
-type Progress func(<-chan transcoder.Progress)
 
 func (receiver Video) CreateM3u8(width int, height int, progress Progress) (string, error) {
 	widthSpread := strconv.Itoa(width)
 	heightSpread := strconv.Itoa(height)
-	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + "_" + widthSpread + "_" + heightSpread + ".m3u8"
+	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + widthSpread + "_" + heightSpread + ".m3u8"
 	dir := filepath.Dir(path)
-	os.Mkdir(dir, 755)
+	os.Mkdir(dir, 775)
 	videoProfile := "baseline"
 	hlsListSize := 0
 	hlsSegmentFilename := dir + string(filepath.Separator) + widthSpread + "_" + heightSpread + "%05d.ts"

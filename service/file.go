@@ -8,6 +8,7 @@ import (
 	fileLib "pmsGo/lib/file"
 	imageLib "pmsGo/lib/file/image"
 	"pmsGo/lib/file/video"
+	"pmsGo/lib/log"
 	"pmsGo/lib/sync"
 	"pmsGo/model"
 	"strconv"
@@ -124,9 +125,9 @@ func (service File) Delete(id int) error {
 }
 
 func (service File) ProcessImage(image *model.File) {
-	sync.NewTask(image, func(uuid string, param interface{}) (string, error) {
+	syncTask := sync.NewTask(image, func(uuid string, param interface{}) (string, error) {
 		imageModel := param.(*model.File)
-		openedImage, err := imageLib.Open(fileLib.FullUrl(imageModel.Path))
+		openedImage, err := imageLib.Open(fileLib.FullPath(imageModel.Path))
 		if err != nil {
 			return uuid, err
 		}
@@ -152,40 +153,69 @@ func (service File) ProcessImage(image *model.File) {
 		}
 		return uuid, nil
 	})
+	sync.AddTask(syncTask)
 }
 
 func (service File) ProcessVideo(image *model.File) {
-	sync.NewTask(image, func(uuid string, param interface{}) (string, error) {
+	syncTask := sync.NewTask(image, func(uuid string, param interface{}) (string, error) {
+		log.Debugf("sync task:%v\n", uuid)
 		videoModel := param.(*model.File)
-		openedVideo, err := video.Open(fileLib.FullUrl(videoModel.Path))
+		log.Debugf("sync task:%v\n", fileLib.FullPath(videoModel.Path))
+		openedVideo, err := video.Open(fileLib.FullPath(videoModel.Path))
 		if err != nil {
 			return uuid, err
 		}
 		//文件幅面大小
 		videoModel.Height = openedVideo.Height
 		videoModel.Width = openedVideo.Width
-		thumbFile, err := openedVideo.CreateThumb(320, 180, "jpg", "")
-		if err != nil {
-			return uuid, err
-		}
-		thumb, err := imageLib.Open(thumbFile)
-		if err != nil {
-			return uuid, err
-		}
-		videoModel.Thumb = fileLib.RelativePath(fileLib.Path(thumb.FullPath()))
-		openedVideo.CreateM3u8(720, 576, func(progresses <-chan transcoder.Progress) {
-			for progress := range progresses {
-				time, err := strconv.Atoi(progress.GetCurrentTime())
-				if err != nil {
-					time = 0
+		thumbFile, err := openedVideo.CreateThumb(320, 180, "jpg", "", func(progresses <-chan transcoder.Progress) {
+			go func() {
+				for progress := range progresses {
+					time, err := strconv.Atoi(progress.GetCurrentTime())
+					if err != nil {
+						time = 0
+					}
+					current := int(progress.GetProgress())
+					err = cache.Set(VideoProgressCacheKey+":"+strconv.Itoa(videoModel.ID), map[string]interface{}{"action": "createThumb", "current": current, "time": time}, ProgressCacheTtl)
+					if err != nil {
+						return
+					}
+					if current==100{
+						thumb, err := imageLib.Open(thumbFile)
+						if err != nil {
+							return uuid, err
+						}
+						videoModel.Thumb = fileLib.RelativePath(fileLib.Path(thumb.FullPath()))
+					}
 				}
-				current := int(progress.GetProgress())
-				err = cache.Set(VideoProgressCacheKey+":"+strconv.Itoa(videoModel.ID), map[string]int{"current": current, "time": time}, ProgressCacheTtl)
-				if err != nil {
-					return
-				}
-			}
+			}()
 		})
+		if err != nil {
+			return uuid, err
+		}
+
+		m3u8, err := openedVideo.CreateM3u8(720, 576, func(progresses <-chan transcoder.Progress) {
+			go func() {
+				for progress := range progresses {
+					time, err := strconv.Atoi(progress.GetCurrentTime())
+					if err != nil {
+						time = 0
+					}
+					current := int(progress.GetProgress())
+					err = cache.Set(VideoProgressCacheKey+":"+strconv.Itoa(videoModel.ID), map[string]interface{}{"action": "createM3u8", "current": current, "time": time}, ProgressCacheTtl)
+					if err != nil {
+						return
+					}
+					if current==100{
+						
+					}
+				}
+			}()
+		})
+		if err != nil {
+			return "", err
+		}
+		videoModel.Preview = fileLib.RelativePath(fileLib.Path(m3u8))
 		connect := videoModel.DB()
 		result := connect.Select("Height", "Width", "Thumb", "Preview").Updates(videoModel)
 		if result.Error != nil {
@@ -193,4 +223,5 @@ func (service File) ProcessVideo(image *model.File) {
 		}
 		return uuid, nil
 	})
+	sync.AddTask(syncTask)
 }

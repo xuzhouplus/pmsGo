@@ -63,7 +63,6 @@ func (cto file) Upload(ctx *gin.Context) {
 	case fileLib.TypeImage:
 		service.FileService.ProcessImage(fileModel)
 	}
-	fileModel.Path = fileLib.FullUrl(fileModel.Path)
 	ctx.JSON(http.StatusOK, cto.ResponseOk(fileModel, "success"))
 }
 

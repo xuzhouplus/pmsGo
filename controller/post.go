@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pmsGo/lib/controller"
-	"pmsGo/lib/image"
+	fileLib "pmsGo/lib/file"
 	"pmsGo/model"
 	"pmsGo/service"
 	"strconv"
@@ -133,6 +133,6 @@ func (ctl post) Detail(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, err.Error()))
 		return
 	}
-	one.Cover = image.FullUrl(one.Cover)
+	one.Cover = fileLib.FullUrl(one.Cover)
 	ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeOk(), one, "获取稿件成功"))
 }

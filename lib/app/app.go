@@ -6,6 +6,7 @@ import (
 	"pmsGo/lib/middleware/auth"
 	"pmsGo/lib/middleware/cors"
 	"pmsGo/lib/middleware/session"
+	_ "pmsGo/lib/sync"
 	"pmsGo/router"
 )
 

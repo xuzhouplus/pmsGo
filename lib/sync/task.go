@@ -2,6 +2,7 @@ package sync
 
 import (
 	"pmsGo/lib/config"
+	"pmsGo/lib/log"
 	"pmsGo/lib/security/random"
 	"runtime"
 	"sync"
@@ -41,6 +42,7 @@ type Task struct {
 type Handler func(string, interface{}) (string, error)
 
 func NewTask(param interface{}, handler Handler) *Task {
+	log.Debugf("New sync task:%+v\n", param)
 	uuid := random.Uuid(false)
 	task := taskPool.Get()
 	if task == nil {
@@ -94,6 +96,7 @@ func taskReceiver() {
 		task := <-taskChan
 		taskUUID, err = task.Handler(task.UUID, task.Param)
 		if err != nil {
+			log.Debugf("sync worker error:%v\n", err)
 			UpdateTaskState(taskUUID, StateError)
 			taskPool.Put(task)
 		} else {
@@ -104,6 +107,7 @@ func taskReceiver() {
 }
 
 func InitTaskReceiver(num int) {
+	log.Debugf("Start sync workers: %v \n", num)
 	for i := 0; i < num; i++ {
 		go taskReceiver()
 	}

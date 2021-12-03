@@ -68,7 +68,7 @@ func FormUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, err
 	if subDir == SubDir {
 		subDir = upload.FileType
 	}
-	upload.File = subDir + "/" + date + "/" + guid + upload.Extension
+	upload.File = "/" + subDir + "/" + date + "/" + guid + upload.Extension
 	filePath := GetPath() + upload.File
 	filePath = filepath.ToSlash(filePath)
 	err = mkdir(path.Dir(filePath))
@@ -235,6 +235,9 @@ func validateExtensions(fileType string, fileExtension string) error {
 		if extension == ("." + fileExtension) {
 			return nil
 		}
+		if ("." + extension) == fileExtension {
+			return nil
+		}
 	}
 	return errors.New(fmt.Sprintf("Not supperted extension: %v/%v \n", fileExtension, extensions))
 }
@@ -247,15 +250,15 @@ func validateMimeType(fileType string, mimeType string) error {
 	case TypeImage:
 		mimeTypes = config.Config.Web.Upload.Image.MimeTypes
 	}
-	for _, mimeType := range mimeTypes {
-		if mimeType == "*" {
+	for _, rangeMimeType := range mimeTypes {
+		if rangeMimeType == "*" {
 			return nil
 		}
-		if mimeType == mimeType {
+		if rangeMimeType == mimeType {
 			return nil
 		}
 	}
-	return errors.New(fmt.Sprintf("Not supperted mime type: %v/%v \n", mimeType, mimeType))
+	return errors.New(fmt.Sprintf("Not supperted mime type: %v / %v \n", mimeType, mimeTypes))
 }
 
 func validateMaxFiles(fileType string, fileCount int) error {

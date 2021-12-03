@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pmsGo/lib/controller"
-	"pmsGo/lib/image"
+	fileLib "pmsGo/lib/file"
 	"pmsGo/lib/log"
 	"pmsGo/model"
 	"pmsGo/service"
@@ -82,8 +82,8 @@ func (ctl carousel) Create(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return
 	}
-	carousel.Url = image.FullUrl(carousel.Url)
-	carousel.Thumb = image.FullUrl(carousel.Thumb)
+	carousel.Url = fileLib.FullUrl(carousel.Url)
+	carousel.Thumb = fileLib.FullUrl(carousel.Thumb)
 	ctx.JSON(http.StatusOK, ctl.ResponseOk(carousel, "success"))
 }
 
@@ -111,8 +111,8 @@ func (ctl carousel) Update(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return
 	}
-	carousel.Url = image.FullUrl(carousel.Url)
-	carousel.Thumb = image.FullUrl(carousel.Thumb)
+	carousel.Url = fileLib.FullUrl(carousel.Url)
+	carousel.Thumb = fileLib.FullUrl(carousel.Thumb)
 	ctx.JSON(http.StatusOK, ctl.ResponseOk(carousel, "success"))
 }
 

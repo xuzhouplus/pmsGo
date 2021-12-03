@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"pmsGo/lib/config"
 	"pmsGo/lib/controller"
-	"pmsGo/lib/image"
+	fileLib "pmsGo/lib/file"
 	"pmsGo/lib/middleware/auth"
 	"pmsGo/lib/oauth"
 	"pmsGo/lib/oauth/gateway"
@@ -134,14 +134,14 @@ func (ctl admin) Profile(ctx *gin.Context) {
 			return
 		}
 		if requestData["avatar"] != nil {
-			instance, err := image.Base64Upload(requestData["avatar"].(string), "/avatar")
+			instance, err := fileLib.Base64Upload(requestData["avatar"].(string), "/avatar")
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 				return
 			}
 			requestData["avatar"] = string(instance.Url())
 			if account.Avatar != "" {
-				err := image.Remove(string(image.UrlToPath(image.Url(account.Avatar))))
+				err := fileLib.Remove(string(fileLib.UrlToPath(fileLib.Url(account.Avatar))))
 				if err != nil {
 					ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 					return
