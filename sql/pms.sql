@@ -95,18 +95,19 @@ CREATE TABLE `pms_connects`  (
 -- Table structure for pms_files
 -- ----------------------------
 DROP TABLE IF EXISTS `pms_files`;
-CREATE TABLE `pms_files`  (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '文件类型',
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '文件名',
-  `thumb` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '缩略图',
-  `path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件路径',
-  `width` int NULL DEFAULT NULL COMMENT '幅面宽',
-  `height` int NULL DEFAULT NULL COMMENT '幅面高',
-  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '说明',
-  `preview` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预览图',
+CREATE TABLE `pms_files` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uuid` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `type` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '文件类型',
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '文件名',
+  `thumb` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '缩略图',
+  `path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '文件路径',
+  `width` int(11) DEFAULT NULL COMMENT '幅面宽',
+  `height` int(11) DEFAULT NULL COMMENT '幅面高',
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '说明',
+  `preview` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预览图',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文件管理' ROW_FORMAT = DYNAMIC;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='文件管理';
 
 -- ----------------------------
 -- Records of pms_files

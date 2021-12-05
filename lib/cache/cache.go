@@ -25,10 +25,10 @@ func init() {
 		Redis:      Redis,
 		LocalCache: cache.NewTinyLFU(1000, time.Minute),
 		Marshal: func(i interface{}) ([]byte, error) {
-			return json.Marshal(i)
+			return Marshal(i)
 		},
 		Unmarshal: func(bytes []byte, i interface{}) error {
-			return json.Unmarshal(bytes, i)
+			return Unmarshal(bytes, i)
 		},
 	})
 	Prefix = config.Config.Cache.Prefix
@@ -37,6 +37,18 @@ func init() {
 
 func Key(key string) string {
 	return Prefix + key
+}
+
+func Ttl(seconds int) time.Duration {
+	return time.Duration(seconds) * time.Second
+}
+
+func Marshal(value interface{}) ([]byte, error) {
+	return json.Marshal(value)
+}
+
+func Unmarshal(bytes []byte, i interface{}) error {
+	return json.Unmarshal(bytes, i)
 }
 
 func Get(key string) (interface{}, error) {
@@ -62,7 +74,7 @@ func Set(key string, value interface{}, ttl int) error {
 		ttl = Expire
 	}
 	if ttl > 0 {
-		item.TTL = time.Duration(ttl)
+		item.TTL = Ttl(ttl)
 	}
 	err := Cache.Set(item)
 	if err != nil {
@@ -78,7 +90,7 @@ func SetNX(key string, value interface{}, ttl int) error {
 		Key:   key,
 		Value: value,
 		SetNX: true,
-		TTL:   time.Duration(ttl),
+		TTL:   Ttl(ttl),
 	})
 	if err != nil {
 		return err
@@ -96,10 +108,40 @@ func SetEX(key string, value interface{}, ttl int) error {
 		Key:   key,
 		Value: value,
 		SetNX: true,
-		TTL:   time.Duration(ttl),
+		TTL:   Ttl(ttl),
 	})
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func Push(key string, value interface{}) error {
+	key = Key(key)
+	marshal, err := Marshal(value)
+	if err != nil {
+		return err
+	}
+	result := Redis.LPush(context.Background(), key, marshal)
+	if result.Err() != nil {
+		return result.Err()
+	}
+	return nil
+}
+
+func Pop(key string) (value interface{}, err error) {
+	key = Key(key)
+	result := Redis.RPop(context.TODO(), key)
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+	data, err := result.Result()
+	if err != nil {
+		return nil, err
+	}
+	err = Unmarshal([]byte(data), &value)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
 }

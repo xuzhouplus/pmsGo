@@ -59,9 +59,17 @@ func (cto file) Upload(ctx *gin.Context) {
 	}
 	switch formUpload.FileType {
 	case fileLib.TypeVideo:
-		service.FileService.ProcessVideo(fileModel)
+		err := service.FileService.ProcessVideo(fileModel)
+		if err != nil {
+			ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+			return
+		}
 	case fileLib.TypeImage:
-		service.FileService.ProcessImage(fileModel)
+		err := service.FileService.ProcessImage(fileModel)
+		if err != nil {
+			ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+			return
+		}
 	}
 	ctx.JSON(http.StatusOK, cto.ResponseOk(fileModel, "success"))
 }

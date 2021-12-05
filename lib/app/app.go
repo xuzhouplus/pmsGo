@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"pmsGo/lib/config"
 	"pmsGo/lib/core"
 	"pmsGo/lib/middleware/auth"
@@ -27,5 +28,9 @@ func Bootstrap() {
 	//注册路由
 	router.Router(core.App)
 	//启动服务
-	core.App.Start(config.Config.Site.Listen)
+	err := core.App.Start(config.Config.Site.Listen)
+	if err != nil {
+		fmt.Printf("%err\n", err)
+		return
+	}
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"pmsGo/lib/config"
 	"pmsGo/lib/log"
@@ -52,7 +51,7 @@ func FormUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, err
 	if err != nil {
 		return nil, err
 	}
-	upload.Extension = path.Ext(file.Filename)
+	upload.Extension = filepath.Ext(file.Filename)
 	err = validateExtensions(upload.FileType, upload.Extension)
 	if err != nil {
 		return nil, err
@@ -65,13 +64,14 @@ func FormUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, err
 	now := time.Now()
 	date := now.Format("2006-01-02")
 	guid := random.Uuid(false)
+	upload.Uuid = guid
 	if subDir == SubDir {
 		subDir = upload.FileType
 	}
-	upload.File = "/" + subDir + "/" + date + "/" + guid + upload.Extension
+	upload.File = "/" + subDir + "/" + date + "/" + guid + "/" + file.Filename
 	filePath := GetPath() + upload.File
 	filePath = filepath.ToSlash(filePath)
-	err = mkdir(path.Dir(filePath))
+	err = Mkdir(filepath.Dir(filePath))
 	if err != nil {
 		return nil, err
 	}
@@ -86,12 +86,12 @@ func FormUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, err
 func Base64Upload(base64Content string, subDir string) (*Upload, error) {
 	upload := &Upload{}
 	//验证图片格式
-	matched, _ := regexp.MatchString(`^data:\s*image\/(\w+);base64,`, base64Content)
+	matched, _ := regexp.MatchString(`^data:\s*image/(\w+);base64,`, base64Content)
 	if !matched {
 		return nil, errors.New("数据格式错误")
 	}
 	//解析图片mimeType、extension和内容
-	reg, _ := regexp.Compile(`^data:(image\/(\w+));base64,`)
+	reg, _ := regexp.Compile(`^data:(image/(\w+));base64,`)
 	allData := reg.FindAllSubmatch([]byte(base64Content), 2)
 	upload.MimeType = string(allData[0][1]) //image/png
 	upload.FileType = "image"
@@ -101,14 +101,15 @@ func Base64Upload(base64Content string, subDir string) (*Upload, error) {
 	now := time.Now()
 	date := now.Format("2006-01-02")
 	guid := random.Uuid(false)
+	upload.Uuid = guid
 	if subDir == SubDir {
 		subDir = TypeImage
 	}
-	upload.File = subDir + "/" + date + "/" + guid + upload.Extension
+	upload.File = subDir + "/" + date + "/" + guid + "/" + "source" + upload.Extension
 	filePath := GetPath() + upload.File
 	filePath = filepath.ToSlash(filePath)
 	//创建文件夹
-	err := mkdir(path.Dir(filePath))
+	err := Mkdir(filepath.Dir(filePath))
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +324,7 @@ func sizeToBytes(sizeSetting interface{}) int64 {
 	return 0
 }
 
-func mkdir(path string) error {
+func Mkdir(path string) error {
 	_, err := os.Stat(path)
 	if err == nil {
 		return nil

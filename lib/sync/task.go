@@ -1,107 +1,120 @@
 package sync
 
 import (
+	"errors"
+	"math"
+	"pmsGo/lib/cache"
 	"pmsGo/lib/config"
 	"pmsGo/lib/log"
 	"pmsGo/lib/security/random"
 	"runtime"
 	"sync"
+	"time"
 )
 
 const (
-	StateWaiting   = "waiting"
-	StateCompleted = "completed"
-	StateError     = "failed"
-	StateNone      = "none"
-	StateOverdue   = "overdue"
+	TaskQueueKey = "task:queue"
 )
 
 var (
-	taskStateMutex sync.Mutex
-	taskPool       sync.Pool
-	taskChan       chan *Task
-	taskState      map[string]string
+	taskPool      sync.Pool
+	taskChan      chan *Task
+	taskProcessor map[string]Processor
 )
 
 func init() {
 	processor := runtime.NumCPU()
 	if config.Config.Sync.Processor > 0 {
-		processor = config.Config.Sync.Processor
+		processor = int(math.Min(float64(processor), float64(config.Config.Sync.Processor)))
 	}
+	taskPool = sync.Pool{New: func() interface{} {
+		return &Task{}
+	}}
 	taskChan = make(chan *Task, processor)
-	taskState = make(map[string]string)
+	taskProcessor = make(map[string]Processor)
 	InitTaskReceiver(processor)
 }
 
+type Processor func(param interface{})
+
+func RegisterProcessor(key string, processor Processor) {
+	taskProcessor[key] = processor
+}
+func UnregisterProcessor(key string) {
+	delete(taskProcessor, key)
+}
+
+func DispatchProcessor(key string) Processor {
+	return taskProcessor[key]
+}
+
 type Task struct {
-	Param   interface{}
-	Handler Handler
-	UUID    string
+	Key       string
+	Param     interface{}
+	UUID      string
+	processor Processor
 }
 
-type Handler func(string, interface{}) (string, error)
-
-func NewTask(param interface{}, handler Handler) *Task {
-	log.Debugf("New sync task:%+v\n", param)
+func NewTask(key string, param interface{}) error {
 	uuid := random.Uuid(false)
-	task := taskPool.Get()
-	if task == nil {
-		return &Task{
-			param,
-			handler,
-			uuid,
-		}
-	} else {
-		task := task.(*Task)
-		task.Param = param
-		task.Handler = handler
-		task.UUID = uuid
-		return task
+	task := &Task{}
+	task.UUID = uuid
+	task.Key = key
+	task.Param = param
+	return AddTask(task)
+}
+
+func AddTask(task *Task) error {
+	err := cache.Push(TaskQueueKey, task)
+	if err != nil {
+		return err
 	}
+	return nil
 }
 
-func AddTask(task *Task) string {
-	go func() {
-		taskChan <- task
-	}()
-	uuid := task.UUID
-	UpdateTaskState(uuid, StateWaiting)
-	return uuid
-}
-
-func UpdateTaskState(uuid, state string) {
-	taskStateMutex.Lock()
-	defer taskStateMutex.Unlock()
-
-	taskState[uuid] = state
-}
-
-func GetTaskState(uuid string) (state string) {
-	taskStateMutex.Lock()
-	defer taskStateMutex.Unlock()
-
-	resultState, exists := taskState[uuid]
-	if !exists {
-		state = StateNone
-	} else {
-		state = resultState
+func GetTask() (*Task, error) {
+	value, err := cache.Pop(TaskQueueKey)
+	if err != nil {
+		return nil, err
 	}
-	return
+	if value != nil {
+		decode := value.(map[string]interface{})
+		task := &Task{}
+		task.UUID = decode["UUID"].(string)
+		task.Key = decode["Key"].(string)
+		task.Param = decode["Param"]
+		return task, nil
+	}
+	return nil, errors.New("task data is empty")
 }
 
 func taskReceiver() {
-	var taskUUID string
-	var err error
 	for {
 		task := <-taskChan
-		taskUUID, err = task.Handler(task.UUID, task.Param)
+		task.processor(task.Param)
+		taskPool.Put(task)
+	}
+}
+
+func taskDispatcher() {
+	for {
+		taskData, err := GetTask()
 		if err != nil {
-			log.Debugf("sync worker error:%v\n", err)
-			UpdateTaskState(taskUUID, StateError)
-			taskPool.Put(task)
-		} else {
-			UpdateTaskState(taskUUID, StateCompleted)
-			taskPool.Put(task)
+			time.Sleep(time.Second * 2)
+			continue
+		}
+		for {
+			taskWorker := taskPool.Get()
+			if taskWorker != nil {
+				taskProcess := taskWorker.(*Task)
+				taskProcess.UUID = taskData.UUID
+				taskProcess.Param = taskData.Param
+				taskProcess.processor = DispatchProcessor(taskData.Key)
+				taskChan <- taskProcess
+				break
+			} else {
+				time.Sleep(time.Second * 2)
+			}
 		}
 	}
 }
@@ -111,4 +124,6 @@ func InitTaskReceiver(num int) {
 	for i := 0; i < num; i++ {
 		go taskReceiver()
 	}
+	log.Debug("Start sync dispatcher \n")
+	go taskDispatcher()
 }

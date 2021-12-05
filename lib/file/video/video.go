@@ -1,11 +1,9 @@
 package video
 
 import (
-	"fmt"
 	"github.com/floostack/transcoder"
 	"github.com/floostack/transcoder/ffmpeg"
 	"mime"
-	"os"
 	"path/filepath"
 	"pmsGo/lib/config"
 	"pmsGo/lib/file"
@@ -71,9 +69,7 @@ func (receiver Video) FileName() string {
 	return strings.TrimSuffix(receiver.Name, receiver.Extension)
 }
 
-type Progress func(<-chan transcoder.Progress)
-
-func (receiver Video) CreateThumb(width int, height int, ext string, time string, progress Progress) (string, error) {
+func (receiver Video) CreateThumb(width int, height int, ext string, time string) (string, <-chan transcoder.Progress, error) {
 	if time == "" {
 		time = "00:00:00"
 	}
@@ -81,7 +77,10 @@ func (receiver Video) CreateThumb(width int, height int, ext string, time string
 	heightSpread := strconv.Itoa(height)
 	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + widthSpread + "_" + heightSpread + "." + ext
 	dir := filepath.Dir(path)
-	os.Mkdir(dir, 775)
+	err := file.Mkdir(dir)
+	if err != nil {
+		return path, nil, err
+	}
 	outputFormat := "image2"
 	overwrite := true
 	videoFilter := "scale=" + widthSpread + ":" + heightSpread
@@ -96,22 +95,23 @@ func (receiver Video) CreateThumb(width int, height int, ext string, time string
 		WithOptions(opts).
 		Start(opts)
 	if err != nil {
-		fmt.Printf("%v\n", err)
-		return "", err
+		return path, nil, err
 	}
-	progress(progressChannel)
-	return path, nil
+	return path, progressChannel, nil
 }
 
-func (receiver Video) CreateM3u8(width int, height int, progress Progress) (string, error) {
+func (receiver Video) CreateM3u8(width int, height int) (string, <-chan transcoder.Progress, error) {
 	widthSpread := strconv.Itoa(width)
 	heightSpread := strconv.Itoa(height)
 	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + widthSpread + "_" + heightSpread + ".m3u8"
 	dir := filepath.Dir(path)
-	os.Mkdir(dir, 775)
+	err := file.Mkdir(dir)
+	if err != nil {
+		return path, nil, err
+	}
 	videoProfile := "baseline"
 	hlsListSize := 0
-	hlsSegmentFilename := dir + string(filepath.Separator) + widthSpread + "_" + heightSpread + "%05d.ts"
+	hlsSegmentFilename := dir + string(filepath.Separator) + widthSpread + "_" + heightSpread + "_%05d.ts"
 	hlsSegmentDuration := 10
 	outputFormat := "hls"
 	overwrite := true
@@ -134,8 +134,7 @@ func (receiver Video) CreateM3u8(width int, height int, progress Progress) (stri
 		WithOptions(opts).
 		Start(opts)
 	if err != nil {
-		return "", err
+		return path, nil, err
 	}
-	progress(progressChannel)
-	return path, nil
+	return path, progressChannel, nil
 }

@@ -8,7 +8,7 @@ import (
 type File struct {
 	Name      string `json:"name"`
 	Path      string `json:"path"`
-	Size      string  `json:"size"`
+	Size      string `json:"size"`
 	MimeType  string `json:"mimeType"`
 	Extension string `json:"extension"`
 	Width     int    `json:"width"`
@@ -17,6 +17,7 @@ type File struct {
 
 type Upload struct {
 	ctx       *gin.Context
+	Uuid      string `json:"uuid"`
 	File      string `json:"file"`
 	FileType  string `json:"fileType"`
 	MimeType  string `json:"mimeType"`
