@@ -23,6 +23,14 @@ const (
 	TypeUnknown = "unknown"
 )
 
+const (
+	B  = 1
+	KB = B * 1024
+	MB = KB * 1024
+	GB = MB * 1024
+	TB = GB * 1024
+)
+
 const SubDir = "baseOnFileType"
 
 type Url string
@@ -80,6 +88,19 @@ func FormUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, err
 		return nil, err
 	}
 	return upload, nil
+}
+
+func ChunkUpload(ctx *gin.Context, fileName string, subDir string) (*Upload, error) {
+	var query map[string]interface{}
+	ctx.ShouldBindQuery(&query)
+	log.Debugf("query:%+v\n", query)
+	var bodyData map[string]interface{}
+	ctx.ShouldBindJSON(&bodyData)
+	log.Debugf("body:%+v\n", bodyData)
+	var formData map[string]interface{}
+	ctx.ShouldBind(&formData)
+	log.Debugf("form:%+v\n", formData)
+	return nil, errors.New("error")
 }
 
 // Base64Upload 图片base64上传
@@ -337,4 +358,17 @@ func Mkdir(path string) error {
 		return nil
 	}
 	return err
+}
+
+func CreateTmp(file string, size int64) *os.File {
+	f, err := os.Create(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	if err := f.Truncate(size * GB); err != nil {
+		log.Fatal(err)
+	}
+	return f
 }

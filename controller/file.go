@@ -47,7 +47,7 @@ func (cto file) Index(ctx *gin.Context) {
 }
 
 func (cto file) Upload(ctx *gin.Context) {
-	formUpload, err := fileLib.FormUpload(ctx, "file", fileLib.SubDir)
+	formUpload, err := fileLib.ChunkUpload(ctx, "file", fileLib.SubDir)
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 		return
