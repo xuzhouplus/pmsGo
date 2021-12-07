@@ -23,7 +23,13 @@ type Upload struct {
 	MimeType  string `json:"mimeType"`
 	Extension string `json:"extension"`
 	Size      int64  `json:"size"`
+	Status    int    `json:"status"`
 }
+
+const (
+	UploadStatusProcess  = 1
+	UploadStatusComplete = 2
+)
 
 // Path 获取文件绝对路径
 func (upload Upload) Path() Path {

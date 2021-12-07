@@ -18,7 +18,7 @@ var File = &file{}
 func (cto file) Verbs() map[string][]string {
 	verbs := make(map[string][]string)
 	verbs["index"] = []string{controller.Get}
-	verbs["upload"] = []string{controller.Post}
+	verbs["upload"] = []string{controller.Post, controller.Get}
 	verbs["delete"] = []string{controller.Post}
 	return verbs
 }
@@ -47,9 +47,20 @@ func (cto file) Index(ctx *gin.Context) {
 }
 
 func (cto file) Upload(ctx *gin.Context) {
-	formUpload, err := fileLib.ChunkUpload(ctx, "file", fileLib.SubDir)
+	if ctx.Request.Method == controller.Get {
+		if fileLib.ChunkCheck(ctx) == true {
+			ctx.JSON(http.StatusOK, cto.ResponseOk("", ""))
+		}
+		ctx.JSON(http.StatusNotFound, cto.ResponseFail("", ""))
+		return
+	}
+	formUpload, err := fileLib.ChunkUpload(ctx, "binary", fileLib.SubDir)
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+		return
+	}
+	if formUpload.Status == fileLib.UploadStatusProcess {
+		ctx.JSON(http.StatusOK, cto.ResponseFail("", ""))
 		return
 	}
 	fileModel, err := service.FileService.Upload(formUpload, ctx.PostForm("name"), ctx.PostForm("description"))

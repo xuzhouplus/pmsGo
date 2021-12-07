@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"pmsGo/lib/cache"
 	"pmsGo/lib/config"
 	"pmsGo/lib/log"
 	"pmsGo/lib/security/base64"
@@ -14,6 +16,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,6 +35,9 @@ const (
 )
 
 const SubDir = "baseOnFileType"
+
+const ChunkUploadCountCache = "chunk:count:"
+const ChunkUploadFileCache = "chunk:file:"
 
 type Url string
 
@@ -90,17 +96,106 @@ func FormUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, err
 	return upload, nil
 }
 
-func ChunkUpload(ctx *gin.Context, fileName string, subDir string) (*Upload, error) {
-	var query map[string]interface{}
-	ctx.ShouldBindQuery(&query)
-	log.Debugf("query:%+v\n", query)
-	var bodyData map[string]interface{}
-	ctx.ShouldBindJSON(&bodyData)
-	log.Debugf("body:%+v\n", bodyData)
-	var formData map[string]interface{}
-	ctx.ShouldBind(&formData)
-	log.Debugf("form:%+v\n", formData)
-	return nil, errors.New("error")
+func ChunkCheck(ctx *gin.Context) bool {
+	taskId := ctx.Query("id")
+	chunkIndex := ctx.Query("index")
+	cached, err := cache.Get(ChunkUploadCountCache + taskId + ":" + chunkIndex)
+	if err != nil {
+		return false
+	}
+	if cached == "1" {
+		return true
+	}
+	return false
+}
+
+func ChunkUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, error) {
+	upload := &Upload{}
+	upload.ctx = ctx
+	upload.MimeType = ctx.PostForm("type")
+	upload.FileType = GetFileType(upload.MimeType)
+	fileName := ctx.PostForm("file")
+	upload.Extension = filepath.Ext(fileName)
+	upload.Uuid = ctx.PostForm("id")
+	if subDir == SubDir {
+		subDir = upload.FileType
+	}
+	lock := &sync.Mutex{}
+	lock.Lock()
+	cacheData, err := cache.Get(ChunkUploadFileCache + upload.Uuid)
+	if err != nil {
+		return nil, err
+	}
+	var saveFile *os.File
+	var filePath string
+	if cacheData == nil {
+		now := time.Now()
+		date := now.Format("2006-01-02")
+		upload.File = "/" + subDir + "/" + date + "/" + upload.Uuid + "/" + fileName
+		filePath = GetPath() + upload.File
+		filePath = filepath.ToSlash(filePath)
+		total, err := strconv.Atoi(ctx.PostForm("total"))
+		if err != nil {
+			return nil, err
+		}
+		saveFile, err = CreateFile(filePath, int64(total))
+		if err != nil {
+			return nil, err
+		}
+		defer saveFile.Close()
+		err = cache.Set(ChunkUploadFileCache+upload.Uuid, filePath, 1800)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		filePath = cacheData.(string)
+		saveFile, err = OpenFile(filePath)
+		if err != nil {
+			return nil, err
+		}
+		defer saveFile.Close()
+	}
+	upload.File = RelativePath(Path(filePath))
+	lock.Unlock()
+	formFile, err := ctx.FormFile(fieldName)
+	if err != nil {
+		return nil, err
+	}
+	uploadFile, err := formFile.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer uploadFile.Close()
+	chunkIndex, _ := strconv.Atoi(ctx.PostForm("index"))
+	chunkSize, _ := strconv.Atoi(ctx.PostForm("chunk"))
+	chunkOffset := (chunkIndex - 1) * chunkSize * B
+	bufferSize := make([]byte, 1024)
+	for {
+		readLen, err := uploadFile.Read(bufferSize)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		_, err = saveFile.WriteAt(bufferSize, int64(chunkOffset))
+		if err != nil {
+			return nil, err
+		}
+		chunkOffset = chunkOffset + readLen
+	}
+	increase, err := cache.Increase(ChunkUploadCountCache+upload.Uuid, 1)
+	if err != nil {
+		return nil, err
+	}
+	lock.Lock()
+	defer lock.Unlock()
+	if strconv.Itoa(int(increase)) == ctx.PostForm("count") {
+		upload.Status = UploadStatusComplete
+	} else {
+		upload.Status = UploadStatusProcess
+	}
+	return upload, nil
 }
 
 // Base64Upload 图片base64上传
@@ -158,11 +253,11 @@ func GetUrl() string {
 
 // GetFileType 获取文件类型
 func GetFileType(mimeType string) string {
-	matched, _ := regexp.MatchString(`^image\/(\w+)`, mimeType)
+	matched, _ := regexp.MatchString(`^image/(\w+)`, mimeType)
 	if matched {
 		return TypeImage
 	}
-	matched, _ = regexp.MatchString(`^video\/(\w+)`, mimeType)
+	matched, _ = regexp.MatchString(`^video/(\w+)`, mimeType)
 	if matched {
 		return TypeVideo
 	}
@@ -360,15 +455,26 @@ func Mkdir(path string) error {
 	return err
 }
 
-func CreateTmp(file string, size int64) *os.File {
-	f, err := os.Create(file)
+func CreateFile(file string, size int64) (*os.File, error) {
+	err := Mkdir(filepath.Dir(file))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	defer f.Close()
+	openFile, err := os.Create(file)
+	if err != nil {
+		return nil, err
+	}
 
-	if err := f.Truncate(size * GB); err != nil {
-		log.Fatal(err)
+	if err := openFile.Truncate(size * B); err != nil {
+		err := openFile.Close()
+		if err != nil {
+			return nil, err
+		}
+		return nil, err
 	}
-	return f
+	return openFile, nil
+}
+
+func OpenFile(file string) (*os.File, error) {
+	return os.OpenFile(file, os.O_RDWR, 0777)
 }

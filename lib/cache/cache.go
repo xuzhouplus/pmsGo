@@ -57,6 +57,8 @@ func Get(key string) (interface{}, error) {
 	err := Cache.Get(context.Background(), key, &val)
 	if err == redis.Nil {
 		return nil, nil
+	} else if err == cache.ErrCacheMiss {
+		return nil, nil
 	} else if err != nil {
 		return nil, err
 	}
@@ -144,4 +146,22 @@ func Pop(key string) (value interface{}, err error) {
 		return nil, err
 	}
 	return value, nil
+}
+
+func Increase(key string, increment int64) (int64, error) {
+	key = Key(key)
+	result := Redis.IncrBy(context.Background(), key, increment)
+	if result.Err() != nil {
+		return 0, result.Err()
+	}
+	return result.Result()
+}
+
+func Decrease(key string, decrement int64) (int64, error) {
+	key = Key(key)
+	result := Redis.DecrBy(context.Background(), key, decrement)
+	if result.Err() != nil {
+		return 0, result.Err()
+	}
+	return result.Result()
 }
