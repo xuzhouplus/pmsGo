@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"pmsGo/lib/cache"
+	"pmsGo/lib/config"
 	fileLib "pmsGo/lib/file"
 	imageLib "pmsGo/lib/file/image"
 	"pmsGo/lib/file/video"
@@ -35,6 +36,25 @@ type File struct {
 
 var FileService = &File{}
 
+func (service File) GetMimeTypes(fileType string) []string {
+	if fileType == "" {
+		return nil
+	}
+	fileTypes := make([]string, 0)
+	switch fileType {
+	case fileLib.TypeVideo:
+		fileTypes = config.Config.Web.Upload.Video.Extensions
+	case fileLib.TypeImage:
+		fileTypes = config.Config.Web.Upload.Image.Extensions
+	default:
+		return append(fileTypes, fileType)
+	}
+	if len(fileTypes) == 1 && fileTypes[0] == "*" {
+		return nil
+	}
+	return fileTypes
+}
+
 func (service File) List(page int, limit int, fields []string, fileType string, name string) (map[string]interface{}, error) {
 	var files []model.File
 	fileModel := &model.File{}
@@ -45,8 +65,9 @@ func (service File) List(page int, limit int, fields []string, fileType string, 
 	if name != "" {
 		connect.Where("name like ?", "%"+name+"%")
 	}
-	if fileType != "" {
-		connect.Where("type = ?", fileType)
+	fileMemeTypes := service.GetMimeTypes(fileType)
+	if fileMemeTypes != nil {
+		connect.Where("type", fileMemeTypes)
 	}
 	if page < 0 {
 		page = 0
