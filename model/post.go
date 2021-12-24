@@ -24,7 +24,7 @@ const (
 	PostStatusDisable = 2
 )
 
-func (model Post) DB() *gorm.DB {
+func (model *Post) DB() *gorm.DB {
 	return database.DB.Model(&model)
 }
 

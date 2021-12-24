@@ -18,9 +18,16 @@ type File struct {
 	Height      int    `json:"height"`
 	Description string `json:"description"`
 	Preview     string `json:"preview"`
+	Status      int    `json:"status"`
 }
 
-func (model File) DB() *gorm.DB {
+const (
+	StatusUploaded   = 0
+	StatusProcessing = 1
+	StatusEnabled    = 2
+)
+
+func (model *File) DB() *gorm.DB {
 	return database.DB.Model(&model)
 }
 
@@ -46,4 +53,10 @@ func (model File) RemovePreview() error {
 
 func (model File) RemoveDir() error {
 	return fileLib.Remove(config.Config.Web.Upload.Path + "/" + model.Uuid)
+}
+
+func (model *File) Update(field string, value interface{}) error {
+	db := model.DB()
+	result := db.Update(field, value)
+	return result.Error
 }

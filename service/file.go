@@ -65,9 +65,8 @@ func (service File) List(page int, limit int, fields []string, fileType string, 
 	if name != "" {
 		connect.Where("name like ?", "%"+name+"%")
 	}
-	fileMemeTypes := service.GetMimeTypes(fileType)
-	if fileMemeTypes != nil {
-		connect.Where("type", fileMemeTypes)
+	if fileType != "" {
+		connect.Where("type", fileType)
 	}
 	if page < 0 {
 		page = 0
@@ -107,7 +106,7 @@ func (service File) Upload(uploaded *fileLib.Upload, name string, description st
 	fileModel.Name = name
 	fileModel.Description = description
 	fileModel.Path = fileLib.RelativePath(uploaded.Path())
-	fileModel.Type = uploaded.MimeType
+	fileModel.Type = uploaded.FileType
 	connect := fileModel.DB()
 	result := connect.Create(&fileModel)
 	if result.Error != nil {

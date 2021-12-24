@@ -37,6 +37,6 @@ type Connect struct {
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-func (model Connect) DB() *gorm.DB {
+func (model *Connect) DB() *gorm.DB {
 	return database.DB.Model(&model)
 }

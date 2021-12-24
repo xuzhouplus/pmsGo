@@ -7,7 +7,7 @@ import (
 	"pmsGo/lib/middleware/auth"
 	"pmsGo/lib/middleware/cors"
 	"pmsGo/lib/middleware/session"
-	_ "pmsGo/lib/sync"
+	"pmsGo/lib/sync"
 	"pmsGo/router"
 )
 
@@ -27,7 +27,9 @@ func Bootstrap() {
 	core.App.Use(auth.Auth())
 	//注册路由
 	router.Router(core.App)
-	//启动服务
+	//启动异步任务队列
+	sync.Run()
+	//启动web服务
 	err := core.App.Start(config.Config.Site.Listen)
 	if err != nil {
 		fmt.Printf("%err\n", err)

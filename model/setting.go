@@ -19,6 +19,6 @@ type Setting struct {
 	Required    int    `json:"required"`
 }
 
-func (model Setting) DB() *gorm.DB {
+func (model *Setting) DB() *gorm.DB {
 	return database.DB.Model(&model)
 }

@@ -17,22 +17,25 @@ const (
 )
 
 var (
+	poolNum       int
 	taskPool      sync.Pool
 	taskChan      chan *Task
 	taskProcessor map[string]Processor
 )
 
 func init() {
-	processor := runtime.NumCPU()
+	poolNum = runtime.NumCPU()
 	if config.Config.Sync.Processor > 0 {
-		processor = int(math.Min(float64(processor), float64(config.Config.Sync.Processor)))
+		poolNum = int(math.Min(float64(poolNum), float64(config.Config.Sync.Processor)))
 	}
 	taskPool = sync.Pool{New: func() interface{} {
 		return &Task{}
 	}}
-	taskChan = make(chan *Task, processor)
+	taskChan = make(chan *Task, poolNum)
 	taskProcessor = make(map[string]Processor)
-	InitTaskReceiver(processor)
+}
+func Run() {
+	InitTaskReceiver(poolNum)
 }
 
 type Processor func(param interface{})
@@ -40,6 +43,7 @@ type Processor func(param interface{})
 func RegisterProcessor(key string, processor Processor) {
 	taskProcessor[key] = processor
 }
+
 func UnregisterProcessor(key string) {
 	delete(taskProcessor, key)
 }

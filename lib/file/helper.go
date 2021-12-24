@@ -154,8 +154,8 @@ func ChunkUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, er
 			return nil, err
 		}
 		defer saveFile.Close()
+		upload.File = RelativePath(Path(filePath))
 	}
-	upload.File = RelativePath(Path(filePath))
 	lock.Unlock()
 	formFile, err := ctx.FormFile(fieldName)
 	if err != nil {
@@ -331,6 +331,8 @@ func RelativeUrl(url Url) string {
 }
 
 func RelativePath(path Path) string {
+	log.Debug(path)
+	log.Debug(GetPath())
 	return strings.TrimPrefix(string(path), GetPath())
 }
 

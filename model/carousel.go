@@ -20,7 +20,7 @@ type Carousel struct {
 	Link        string `json:"link"`
 }
 
-func (model Carousel) DB() *gorm.DB {
+func (model *Carousel) DB() *gorm.DB {
 	return database.DB.Model(&model)
 }
 
