@@ -41,7 +41,7 @@ web:
   host: "http://web.pms.test"
   connects: [ alipay,github,baidu,gitee,facebook,google,line,qq,twitter,wechat,weibo]
   upload:
-    path: "D:\\GoCode\\src\\pmsGo\\public\\upload"
+    path: "D:\\GoCode\\pmsGo\\public\\upload"
     url: "http://web.pms.test/go/public/upload"
     video:
       ffmpeg: "D:\\ffmpeg\\bin\\ffmpeg.exe" #ffmpeg bin文件地址

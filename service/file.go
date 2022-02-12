@@ -15,19 +15,21 @@ import (
 )
 
 const (
-	VideoProgressCacheKey       = "progress:video"
-	ImageProgressCacheKey       = "progress:image"
-	ProgressCacheTtl            = 60 * 60 * 24
-	CreateImageThumbSyncTaskKey = "CreateImageThumb"
-	GetVideoSpreadSyncTaskKey   = "GetVideoSpread"
-	CreateVideoThumbSyncTaskKey = "CreateVideoThumb"
-	CreateVideoM3u8SyncTaskKey  = "CreateVideoM3u8"
+	VideoProgressCacheKey        = "progress:video"
+	ImageProgressCacheKey        = "progress:image"
+	ProgressCacheTtl             = 60 * 60 * 24
+	CreateImageThumbSyncTaskKey  = "CreateImageThumb"
+	GetVideoSpreadSyncTaskKey    = "GetVideoSpread"
+	CreateVideoThumbSyncTaskKey  = "CreateVideoThumb"
+	CreateVideoPosterSyncTaskKey = "CreateVideoPoster"
+	CreateVideoM3u8SyncTaskKey   = "CreateVideoM3u8"
 )
 
 func init() {
 	sync.RegisterProcessor(CreateImageThumbSyncTaskKey, CreateImageThumb)
 	sync.RegisterProcessor(GetVideoSpreadSyncTaskKey, GetVideoSpread)
 	sync.RegisterProcessor(CreateVideoThumbSyncTaskKey, CreateVideoThumb)
+	sync.RegisterProcessor(CreateVideoPosterSyncTaskKey, CreateVideoPoster)
 	sync.RegisterProcessor(CreateVideoM3u8SyncTaskKey, CreateVideoM3u8)
 }
 
@@ -127,6 +129,18 @@ func (service File) FindOne(id int) (*model.File, error) {
 	return one, nil
 }
 
+func (service File) FindByUuid(uuid string) (*model.File, error) {
+	one := &model.File{}
+	connect := one.DB()
+	connect.Where("uuid = ?", uuid)
+	connect.Limit(1)
+	err := connect.Find(&one).Error
+	if err != nil {
+		return nil, err
+	}
+	return one, nil
+}
+
 func (service File) Delete(id int) error {
 	var one model.File
 	connect := one.DB()
@@ -205,6 +219,10 @@ func (service File) ProcessVideo(fileModel *model.File) error {
 	if err != nil {
 		return err
 	}
+	err = sync.NewTask(CreateVideoPosterSyncTaskKey, fileModel)
+	if err != nil {
+		return err
+	}
 	err = sync.NewTask(CreateVideoM3u8SyncTaskKey, fileModel)
 	if err != nil {
 		return err
@@ -239,7 +257,16 @@ func CreateVideoThumb(param interface{}) {
 		log.Errorf("%err\n", err)
 		return
 	}
-	path, progressChannel, err := openedVideo.CreateThumb(320, 180, "jpg", "")
+	duration, err := strconv.Atoi(openedVideo.Duration)
+	if err != nil {
+		log.Errorf("%err\n", err)
+		return
+	}
+	time := "00:00:00"
+	if duration > 3 {
+		time = "00:00:03"
+	}
+	path, progressChannel, err := openedVideo.CreateThumb(320, 180, "jpg", time)
 	if err != nil {
 		log.Errorf("%err\n", err)
 		return
@@ -258,10 +285,49 @@ func CreateVideoThumb(param interface{}) {
 	connect := fileModel.DB()
 	result := connect.Where("id = ?", videoModelId).Update("thumb", thumb)
 	if result.Error != nil {
-		log.Errorf("生成封面失败：%err\n", result.Error)
+		log.Errorf("生成缩略图失败：%err\n", result.Error)
 	}
 }
 
+func CreateVideoPoster(param interface{}) {
+	log.Debugf("video poster sync task:%v\n", param)
+	videoModel := param.(map[string]interface{})
+	openedVideo, err := video.Open(fileLib.FullPath(videoModel["path"].(string)))
+	if err != nil {
+		log.Errorf("%err\n", err)
+		return
+	}
+	duration, err := strconv.Atoi(openedVideo.Duration)
+	if err != nil {
+		log.Errorf("%err\n", err)
+		return
+	}
+	time := "00:00:00"
+	if duration > 3 {
+		time = "00:00:03"
+	}
+	path, progressChannel, err := openedVideo.CreateThumb(openedVideo.Width, openedVideo.Height, "jpg", time)
+	if err != nil {
+		log.Errorf("%err\n", err)
+		return
+	}
+	videoModelId := int(videoModel["id"].(float64))
+	for progress := range progressChannel {
+		current := int(progress.GetProgress() * 100)
+		err = cache.Set(VideoProgressCacheKey+":"+strconv.Itoa(videoModelId), map[string]interface{}{"action": "createPoster", "current": current, "time": progress.GetCurrentTime()}, ProgressCacheTtl)
+		if err != nil {
+			log.Debugf("cache poster progress failed:%err\n", err)
+			return
+		}
+	}
+	thumb := fileLib.RelativePath(fileLib.Path(path))
+	fileModel := &model.File{}
+	connect := fileModel.DB()
+	result := connect.Where("id = ?", videoModelId).Update("poster", thumb)
+	if result.Error != nil {
+		log.Errorf("生成封面失败：%err\n", result.Error)
+	}
+}
 func CreateVideoM3u8(param interface{}) {
 	log.Debugf("video m3u8 sync task:%v\n", param)
 	videoModel := param.(map[string]interface{})
