@@ -20,6 +20,7 @@ func (cto file) Verbs() map[string][]string {
 	verbs["index"] = []string{controller.Get}
 	verbs["upload"] = []string{controller.Post, controller.Get}
 	verbs["delete"] = []string{controller.Post}
+	verbs["detail"] = []string{controller.Get}
 	return verbs
 }
 
@@ -98,4 +99,17 @@ func (cto file) Delete(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, cto.ResponseOk(nil, "success"))
+}
+
+func (cto file) Detail(ctx *gin.Context) {
+	id := ctx.Query("uuid")
+	one, err := service.FileService.FindByUuid(id)
+	if err != nil {
+		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+		return
+	}
+	one.Path = fileLib.FullUrl(one.Path)
+	one.Thumb = fileLib.FullUrl(one.Thumb)
+	one.Preview = fileLib.FullUrl(one.Preview)
+	ctx.JSON(http.StatusOK, cto.ResponseOk(one, "success"))
 }
