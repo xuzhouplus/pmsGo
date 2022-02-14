@@ -1,6 +1,6 @@
-### 基于Gin的pms服务端
+## 基于Gin的pms服务端
 
-#### 目录结构
+### 目录结构
 
 ```
 controller #控制器
@@ -23,9 +23,21 @@ public         #静态资源
 router         #路由
 sql            #初始sql
 ```
+### 环境搭建
 
-#### 构建
+#### 开发工具
+ - GoLand 2021.3.3
+ - go1.17.7
+ - MySQL5.7
 
+#### GoLand配置
+在设置中`Go Modules`项配置`envrionment`值`GOPROXY=https://mirrors.aliyun.com/goproxy/`
+
+### 构建
+构建为Linux 64位可执行程序，生成文件在build
 ```
 GOOS=linux GOARCH=amd64 go build .
 ```
+
+
+
