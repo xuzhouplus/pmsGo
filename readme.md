@@ -34,7 +34,7 @@ sql            #初始sql
 在设置中`Go Modules`项配置`envrionment`值`GOPROXY=https://mirrors.aliyun.com/goproxy/`
 
 ### 构建
-构建为Linux 64位可执行程序，生成文件在build
+构建为Linux 64位可执行程序，生成文件在工程根目录
 ```
 GOOS=linux GOARCH=amd64 go build .
 ```
