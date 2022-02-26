@@ -167,7 +167,7 @@ func (ctl admin) Connects(ctx *gin.Context) {
 	}
 	loginSettings := service.SettingService.GetLoginSettings()
 	if len(loginSettings) == 0 {
-		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "获取失败"))
+		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, "没有可以使用的配置"))
 		return
 	}
 	loginAdmin = loginData.(map[string]interface{})
