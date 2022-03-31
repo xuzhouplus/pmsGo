@@ -5,6 +5,12 @@ import (
 	"pmsGo/lib/database"
 )
 
+const (
+	SwitchTypeWebgl    = "webgl"
+	SwitchTypeSeparate = "separate"
+	SwitchTypeSlide    = "slide"
+)
+
 type Carousel struct {
 	ID          int    `gorm:"private_key" json:"id"`
 	Uuid        string `gorm:"index" json:"uuid"`
@@ -18,6 +24,9 @@ type Carousel struct {
 	Order       int    `json:"order"`
 	Thumb       string `json:"thumb"`
 	Link        string `json:"link"`
+	SwitchType  string `json:"switch_type"`
+	Timeout     int    `json:"timeout"`
+	Duration    int    `json:"duration"`
 }
 
 func (model *Carousel) DB() *gorm.DB {

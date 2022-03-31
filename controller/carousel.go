@@ -30,7 +30,7 @@ func (ctl carousel) Verbs() map[string][]string {
 
 func (ctl carousel) Authenticator() controller.Authenticator {
 	authenticator := controller.Authenticator{
-		Excepts:   []string{"index"},
+		Excepts: []string{"index"},
 	}
 	return authenticator
 }
@@ -77,7 +77,9 @@ func (ctl carousel) Create(ctx *gin.Context) {
 	link := requestLink.(string)
 	requestOrder := requestData["order"]
 	order := requestOrder.(float64)
-	carousel, err := service.CarouselService.Create(int(fileId), title, description, link, int(order))
+	requestSwitchType := requestData["switch_type"]
+	switchType := requestSwitchType.(string)
+	carousel, err := service.CarouselService.Create(int(fileId), title, description, link, int(order), switchType)
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return
@@ -106,7 +108,9 @@ func (ctl carousel) Update(ctx *gin.Context) {
 	link := requestLink.(string)
 	requestOrder := requestData["order"]
 	order := requestOrder.(float64)
-	carousel, err := service.CarouselService.Update(int(id),int(fileId), title, description, link, int(order))
+	requestSwitchType := requestData["switch_type"]
+	switchType := requestSwitchType.(string)
+	carousel, err := service.CarouselService.Update(int(id), int(fileId), title, description, link, int(order), switchType)
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return

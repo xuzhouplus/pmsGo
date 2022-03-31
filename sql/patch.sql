@@ -3,3 +3,7 @@ ALTER TABLE `pms_files`
 
 ALTER TABLE `pms_files`
     ADD COLUMN `poster` varchar(255) NULL COMMENT '封面图' AFTER `name`;
+
+ALTER TABLE `pms_carousels`
+    ADD COLUMN `timeout` int NULL COMMENT '展示时长，单位s' AFTER `switch_type`,
+    ADD COLUMN `duration` int NULL COMMENT '切换时长，单位s' AFTER `timeout`;

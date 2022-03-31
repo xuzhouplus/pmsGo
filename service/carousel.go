@@ -73,7 +73,7 @@ func (service Carousel) CreateFiles(fileId int) (map[string]interface{}, error) 
 	}, nil
 }
 
-func (service Carousel) Create(fileId int, title string, description string, link string, order int) (*model.Carousel, error) {
+func (service Carousel) Create(fileId int, title string, description string, link string, order int, switchType string) (*model.Carousel, error) {
 	carouselLimit, _ := strconv.Atoi(SettingService.GetSetting(model.SettingKeyCarouselLimit))
 	carouselModel := &model.Carousel{}
 	connect := carouselModel.DB()
@@ -101,6 +101,10 @@ func (service Carousel) Create(fileId int, title string, description string, lin
 	carousel.Description = description
 	carousel.Order = order
 	carousel.Uuid = random.Uuid(false)
+	if switchType == "" {
+		switchType = model.SwitchTypeWebgl
+	}
+	carousel.SwitchType = switchType
 	result = connect.Create(&carousel)
 	if result.Error != nil {
 		return nil, result.Error
@@ -112,7 +116,7 @@ func (service Carousel) Create(fileId int, title string, description string, lin
 	return carousel, nil
 }
 
-func (service Carousel) Update(id int, fileId int, title string, description string, link string, order int) (*model.Carousel, error) {
+func (service Carousel) Update(id int, fileId int, title string, description string, link string, order int, switchType string) (*model.Carousel, error) {
 	carousel := &model.Carousel{}
 	db := carousel.DB()
 	db.Where("id = ?", id)
@@ -147,8 +151,11 @@ func (service Carousel) Update(id int, fileId int, title string, description str
 			}
 		}
 		carousel.Order = order
-
 	}
+	if switchType == "" {
+		switchType = model.SwitchTypeWebgl
+	}
+	carousel.SwitchType = switchType
 	connect := carousel.DB()
 	result = connect.Save(&carousel)
 	if result.Error != nil {
