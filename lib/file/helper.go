@@ -131,7 +131,7 @@ func ChunkUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, er
 	if cacheData == nil {
 		now := time.Now()
 		date := now.Format("2006-01-02")
-		upload.File = "/" + subDir + "/" + date + "/" + upload.Uuid + "/" + fileName
+		upload.File = "/" + subDir + "/" + date + "/" + upload.Uuid + "/source." + upload.Extension
 		filePath = GetPath() + upload.File
 		filePath = filepath.ToSlash(filePath)
 		total, err := strconv.Atoi(ctx.PostForm("total"))

@@ -11,6 +11,7 @@ type File struct {
 	ID          int    `gorm:"private_key" json:"id"`
 	Uuid        string `json:"uuid"`
 	Type        string `json:"type"`
+	Extension   string `json:"extension"`
 	Name        string `json:"name"`
 	Poster      string `json:"poster"`
 	Thumb       string `json:"thumb"`

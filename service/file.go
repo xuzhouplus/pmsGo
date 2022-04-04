@@ -109,6 +109,7 @@ func (service File) Upload(uploaded *fileLib.Upload, name string, description st
 	fileModel.Description = description
 	fileModel.Path = fileLib.RelativePath(uploaded.Path())
 	fileModel.Type = uploaded.FileType
+	fileModel.Extension = uploaded.Extension
 	connect := fileModel.DB()
 	result := connect.Create(&fileModel)
 	if result.Error != nil {
@@ -189,7 +190,7 @@ func CreateImageThumb(param interface{}) {
 		return
 	}
 	//生成缩略图
-	thumb, err := openedImage.CreateThumb(320, 180, "jpg")
+	thumb, err := openedImage.CreateThumb(imageModel["uuid"].(string), 320, 180, "jpg")
 	if err != nil {
 		log.Errorf("%err\n", err)
 		return

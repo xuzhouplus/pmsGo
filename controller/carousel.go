@@ -25,6 +25,7 @@ func (ctl carousel) Verbs() map[string][]string {
 	verbs["update"] = []string{controller.Post}
 	verbs["delete"] = []string{controller.Post}
 	verbs["preview"] = []string{controller.Post}
+	verbs["view"] = []string{controller.Get}
 	return verbs
 }
 
@@ -35,20 +36,35 @@ func (ctl carousel) Authenticator() controller.Authenticator {
 	return authenticator
 }
 func (ctl carousel) Index(ctx *gin.Context) {
-	fields, _ := ctx.GetQueryArray("fields")
-	like, _ := ctx.GetQuery("like")
-	order, _ := ctx.GetQueryMap("order")
-	result, err := service.CarouselService.List(0, 0, fields, like, order)
+	match := map[string]interface{}{
+		"status": model.CarouselStatusEnabled,
+	}
+	carousels, err := service.CarouselService.List(0, 0, match, "", nil)
 	if err != nil {
 		log.Error(err)
 		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, err.Error()))
 	} else {
+		result := make([]map[string]interface{}, 0)
+		for _, carousel := range carousels {
+			result = append(result, map[string]interface{}{
+				"uuid":        carousel.Uuid,
+				"type":        carousel.Type,
+				"title":       carousel.Title,
+				"description": carousel.Description,
+				"url":         fileLib.FullUrl(carousel.Url),
+				"width":       carousel.Width,
+				"height":      carousel.Height,
+				"link":        carousel.Link,
+				"switch_type": carousel.SwitchType,
+				"timeout":     carousel.Timeout,
+			})
+		}
 		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeOk(), result, "获取轮播图列表成功"))
 	}
 }
 
 func (ctl carousel) List(ctx *gin.Context) {
-	list, err := service.CarouselService.List(0, 0, nil, nil, nil)
+	list, err := service.CarouselService.List(0, 0, nil, "", nil)
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, err.Error()))
 	} else {
@@ -79,7 +95,9 @@ func (ctl carousel) Create(ctx *gin.Context) {
 	order := requestOrder.(float64)
 	requestSwitchType := requestData["switch_type"]
 	switchType := requestSwitchType.(string)
-	carousel, err := service.CarouselService.Create(int(fileId), title, description, link, int(order), switchType)
+	requestTimeout := requestData["timeout"]
+	timeout := requestTimeout.(float64)
+	carousel, err := service.CarouselService.Create(int(fileId), title, description, link, int(order), switchType, int(timeout))
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return
@@ -110,7 +128,9 @@ func (ctl carousel) Update(ctx *gin.Context) {
 	order := requestOrder.(float64)
 	requestSwitchType := requestData["switch_type"]
 	switchType := requestSwitchType.(string)
-	carousel, err := service.CarouselService.Update(int(id), int(fileId), title, description, link, int(order), switchType)
+	requestTimeout := requestData["timeout"]
+	timeout := requestTimeout.(float64)
+	carousel, err := service.CarouselService.Update(int(id), int(fileId), title, description, link, int(order), switchType, int(timeout))
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return
@@ -122,8 +142,12 @@ func (ctl carousel) Update(ctx *gin.Context) {
 
 func (ctl carousel) Delete(ctx *gin.Context) {
 	requestData := make(map[string]int)
-	ctx.ShouldBind(&requestData)
-	err := service.CarouselService.Delete(requestData["id"])
+	err := ctx.ShouldBind(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
+		return
+	}
+	err = service.CarouselService.Delete(requestData["id"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return
@@ -131,13 +155,25 @@ func (ctl carousel) Delete(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ctl.ResponseOk(nil, "success"))
 }
 
-func (ctl carousel) Preview(ctx *gin.Context) {
-	requestData := make(map[string]int)
-	ctx.ShouldBind(&requestData)
-	preview, err := service.CarouselService.Preview(requestData["file_id"])
-	if err != nil {
-		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
+func (ctl carousel) View(ctx *gin.Context) {
+	queryId, _ := ctx.GetQuery("id")
+	if queryId == "" {
+		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, "缺少请求参数"))
 		return
 	}
-	ctx.JSON(http.StatusOK, ctl.ResponseOk(preview, "success"))
+	carouselId, err := strconv.Atoi(queryId)
+	if err != nil {
+		return
+	}
+	carousel, err := service.CarouselService.FindById(carouselId)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, "缺少请求参数"))
+		return
+	}
+	ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeOk(), map[string]interface{}{
+		"uuid":   carousel.Uuid,
+		"url":    fileLib.FullUrl(carousel.Url),
+		"thumb":  fileLib.FullUrl(carousel.Thumb),
+		"status": carousel.Status,
+	}, "获取成功"))
 }

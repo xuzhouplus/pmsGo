@@ -5,10 +5,11 @@ import (
 )
 
 const (
-	SettingKeyTitle         = "title"    //站点名
-	SettingKeyIcp           = "icp"      //备案号
-	SettingKeyVersion       = "version"  //版本
-	SettingKeyMaintain      = "maintain" //维护状态
+	SettingCarouselLimit    = "carousel_limit" //站点名
+	SettingKeyTitle         = "title"          //站点名
+	SettingKeyIcp           = "icp"            //备案号
+	SettingKeyVersion       = "version"        //版本
+	SettingKeyMaintain      = "maintain"       //维护状态
 	SettingKeyIcon          = "icon"
 	SettingKeyLogo          = "logo"
 	SettingKeyEncryptSecret = "encrypt_secret" //加密密钥
@@ -30,5 +31,5 @@ func (model SiteSetting) TableName() string {
 	return config.Config.Database.Prefix + "settings"
 }
 func (model SiteSetting) Keys() []string {
-	return []string{SettingKeyTitle, SettingKeyIcp, SettingKeyVersion, SettingKeyMaintain, SettingKeyIcon, SettingKeyLogo, SettingKeyEncryptSecret, SettingKeyLoginDuration}
+	return []string{SettingCarouselLimit, SettingKeyTitle, SettingKeyIcp, SettingKeyVersion, SettingKeyMaintain, SettingKeyIcon, SettingKeyLogo, SettingKeyEncryptSecret, SettingKeyLoginDuration}
 }

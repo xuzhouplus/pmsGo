@@ -35,16 +35,16 @@ func Open(file string) (*Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	image := &Image{}
-	image.Image = open
-	image.Path = filepath.Dir(file)
-	image.Name = stat.Name()
-	image.Extension = filepath.Ext(file)
-	image.Size = string(stat.Size())
-	image.MimeType = mime.TypeByExtension(filepath.Ext(file))
-	image.Width = open.Bounds().Size().X
-	image.Height = open.Bounds().Size().Y
-	return image, nil
+	img := &Image{}
+	img.Image = open
+	img.Path = filepath.Dir(file)
+	img.Name = stat.Name()
+	img.Extension = filepath.Ext(file)
+	img.Size = string(stat.Size())
+	img.MimeType = mime.TypeByExtension(filepath.Ext(file))
+	img.Width = open.Bounds().Size().X
+	img.Height = open.Bounds().Size().Y
+	return img, nil
 }
 
 func (img Image) FileName() string {
@@ -106,42 +106,18 @@ func (img Image) Save(filePath string, opt imaging.EncodeOption) (*Image, error)
 	return rst, nil
 }
 
-func (img Image) CreateCarousel(width int, height int, extension string) (*Image, error) {
+func (img Image) CreateCarousel(uuid string, width int, height int, extension string) (*Image, error) {
 	if extension == "" {
 		extension = strings.TrimPrefix(img.Extension, ".")
 	}
 	blur := img.Blur(3)
 	bg := imaging.Resize(blur, width, height, imaging.Lanczos)
-	offsetX := 0
-	offsetY := 0
-	fgWidth := img.Width
-	fgHeight := img.Height
 	fg := img.Image
-	if img.Width < width && img.Height > height {
-		fgWidth = height / img.Height * img.Width
-		offsetX = (width - fgWidth) / 2
-		fg = imaging.Fit(img.Image, fgWidth, fgHeight, imaging.Lanczos)
-	} else if img.Width > width && img.Height < height {
-		fgHeight = width / img.Width * img.Height
-		offsetY = (height - fgHeight) / 2
-		fg = imaging.Fit(img.Image, fgWidth, fgHeight, imaging.Lanczos)
-	} else if img.Width > width && img.Height > height {
-		widthScale := width / img.Width
-		heightScale := height / img.Height
-		if widthScale > heightScale {
-			fgWidth = img.Width * heightScale
-			offsetX = (width - fgWidth) / 2
-		} else {
-			fgHeight = img.Height * widthScale
-			offsetY = (height - fgHeight) / 2
-		}
-		fg = imaging.Fit(img.Image, fgWidth, fgHeight, imaging.Lanczos)
-	} else {
-		offsetX = (width - img.Width) / 2
-		offsetY = (height - img.Height) / 2
+	if img.Width > width || img.Height > height {
+		fg = imaging.Fit(img.Image, width, height, imaging.Lanczos)
 	}
-	dst := imaging.Overlay(bg, fg, image.Pt(offsetX, offsetY), 1.0)
-	tg := img.Path + string(filepath.Separator) + img.FileName() + "_" + strconv.Itoa(bg.Bounds().Size().X) + "_" + strconv.Itoa(bg.Bounds().Size().Y) + "." + extension
+	dst := imaging.OverlayCenter(bg, fg, 1.0)
+	tg := img.Path + string(filepath.Separator) + uuid + "_" + strconv.Itoa(bg.Bounds().Size().X) + "_" + strconv.Itoa(bg.Bounds().Size().Y) + "." + extension
 	err := imaging.Save(dst, tg)
 	if err != nil {
 		return nil, err
@@ -153,7 +129,7 @@ func (img Image) CreateCarousel(width int, height int, extension string) (*Image
 	return carousel, nil
 }
 
-func (img Image) CreateThumb(width int, height int, ext string) (*Image, error) {
+func (img Image) CreateThumb(uuid string, width int, height int, ext string) (*Image, error) {
 	if ext == "" {
 		ext = strings.TrimPrefix(img.Extension, ".")
 	}
@@ -165,7 +141,7 @@ func (img Image) CreateThumb(width int, height int, ext string) (*Image, error) 
 		bg = imaging.New(width, height, color.White)
 	}
 	dst := imaging.OverlayCenter(bg, fg, 1)
-	path := img.Path + string(filepath.Separator) + img.FileName() + "_" + strconv.Itoa(width) + "_" + strconv.Itoa(height) + "." + ext
+	path := img.Path + string(filepath.Separator) + uuid + "_" + strconv.Itoa(width) + "_" + strconv.Itoa(height) + "." + ext
 	err := imaging.Save(dst, path)
 	if err != nil {
 		return nil, err

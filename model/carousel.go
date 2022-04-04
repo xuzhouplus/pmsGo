@@ -11,6 +11,12 @@ const (
 	SwitchTypeSlide    = "slide"
 )
 
+const (
+	CarouselStatusDisabled  = 0
+	CarouselStatusPreparing = 1
+	CarouselStatusEnabled   = 2
+)
+
 type Carousel struct {
 	ID          int    `gorm:"private_key" json:"id"`
 	Uuid        string `gorm:"index" json:"uuid"`
@@ -26,7 +32,7 @@ type Carousel struct {
 	Link        string `json:"link"`
 	SwitchType  string `json:"switch_type"`
 	Timeout     int    `json:"timeout"`
-	Duration    int    `json:"duration"`
+	Status      int    `json:"status"`
 }
 
 func (model *Carousel) DB() *gorm.DB {
@@ -60,7 +66,7 @@ func (model *Carousel) SetOrder(order interface{}) error {
 			return result.Error
 		}
 		for _, carousel := range carousels {
-			result = connect.Model(&Carousel{}).Where("id", carousel.ID).Update("order", carousel.Order-1).Save(&carousel)
+			result = connect.Model(&Carousel{}).Where("id", carousel.ID).Update("order", carousel.Order-1)
 			if result.Error != nil {
 				connect.Rollback()
 				return result.Error
@@ -84,5 +90,23 @@ func (model *Carousel) SetOrder(order interface{}) error {
 	model.Order = orderInt
 	connect.Save(&model)
 	connect.Commit()
+	return nil
+}
+
+func (model *Carousel) Disable() error {
+	connect := model.DB()
+	result := connect.Model(&Carousel{}).Where("id", model.ID).Update("status", CarouselStatusDisabled)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func (model *Carousel) Enable() error {
+	connect := model.DB()
+	result := connect.Model(&Carousel{}).Where("id", model.ID).Update("status", CarouselStatusEnabled)
+	if result.Error != nil {
+		return result.Error
+	}
 	return nil
 }

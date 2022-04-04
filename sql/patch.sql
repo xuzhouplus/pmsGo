@@ -5,5 +5,10 @@ ALTER TABLE `pms_files`
     ADD COLUMN `poster` varchar(255) NULL COMMENT '封面图' AFTER `name`;
 
 ALTER TABLE `pms_carousels`
-    ADD COLUMN `timeout` int NULL COMMENT '展示时长，单位s' AFTER `switch_type`,
-    ADD COLUMN `duration` int NULL COMMENT '切换时长，单位s' AFTER `timeout`;
+    ADD COLUMN `timeout` int NULL COMMENT '展示时长，单位s' AFTER `switch_type`;
+
+ALTER TABLE `pms_files`
+    ADD COLUMN `extension` varchar(255) NULL COMMENT '文件后缀' AFTER `uuid`;
+
+ALTER TABLE `pms_carousels`
+    ADD COLUMN `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态，1启用，0禁用' AFTER `timeout`;

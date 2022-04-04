@@ -5,75 +5,112 @@ import (
 	"gorm.io/gorm"
 	fileLib "pmsGo/lib/file"
 	"pmsGo/lib/file/image"
+	"pmsGo/lib/log"
 	"pmsGo/lib/security/random"
+	"pmsGo/lib/sync"
 	"pmsGo/model"
 	"strconv"
 )
+
+const (
+	CreateCarouselSyncTaskKey = "CreateCarousel"
+)
+
+func init() {
+	sync.RegisterProcessor(CreateCarouselSyncTaskKey, CreateCarousel)
+}
 
 type Carousel struct {
 }
 
 var CarouselService = &Carousel{}
 
-func (service Carousel) List(page interface{}, size interface{}, fields interface{}, like interface{}, order interface{}) ([]model.Carousel, error) {
+func (service Carousel) List(page int, size int, match map[string]interface{}, titleLike string, order map[string]string) ([]model.Carousel, error) {
 	var carousels []model.Carousel
 	carouselModel := &model.Carousel{}
 	connect := carouselModel.DB()
-	if size != nil {
-		connect.Limit(size.(int))
+	if size != 0 {
+		connect.Limit(size)
 	}
-	if page != nil {
-		connect.Offset(page.(int) * size.(int))
+	if page != 0 {
+		connect.Offset(page * size)
 	}
-	if fields != nil {
-		connect.Select(fields)
+
+	if match != nil {
+		connect.Where(match)
 	}
-	if like != nil && like != "" {
-		connect.Where("title like ?", like.(string))
+
+	if titleLike != "" {
+		connect.Where("title like ?", titleLike)
 	}
 	if order != nil {
-		for field, sort := range order.(map[string]string) {
+		for field, sort := range order {
 			connect.Order("`" + field + "` " + sort)
 		}
 	}
 	if connect.Find(&carousels).Error != nil {
-		return carousels, errors.New("获取轮播图列表失败")
-	}
-	for i, carousel := range carousels {
-		carousel.Url = fileLib.FullUrl(carousel.Url)
-		carousel.Thumb = fileLib.FullUrl(carousel.Thumb)
-		carousels[i] = carousel
+		return nil, errors.New("获取轮播图列表失败")
 	}
 	return carousels, nil
 }
 
-func (service Carousel) CreateFiles(fileId int) (map[string]interface{}, error) {
+func (service Carousel) CreateFiles(uuid string, fileId int) (map[string]interface{}, error) {
 	file, err := FileService.FindOne(fileId)
 	if err != nil {
 		return nil, err
 	}
-	srcImage, err := image.Open(fileLib.FullPath(file.Path))
-	if err != nil {
-		return nil, err
+	if uuid == "" {
+		uuid = random.Uuid(false)
 	}
-	carouselFile, err := srcImage.CreateCarousel(1920, 1080, "jpg")
-	if err != nil {
-		return nil, err
-	}
-	thumb, err := carouselFile.CreateThumb(320, 180, "")
+	err = sync.NewTask(CreateCarouselSyncTaskKey, map[string]interface{}{
+		"uuid": uuid,
+		"file": fileLib.FullPath(file.Path),
+	})
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"type":   file.Type,
-		"url":    fileLib.RelativePath(fileLib.Path(carouselFile.FullPath())),
-		"thumb":  fileLib.RelativePath(fileLib.Path(thumb.FullPath())),
-		"height": carouselFile.Height,
-		"width":  carouselFile.Width,
+		"height": 1920,
+		"width":  1080,
 	}, nil
 }
 
-func (service Carousel) Create(fileId int, title string, description string, link string, order int, switchType string) (*model.Carousel, error) {
+func CreateCarousel(param interface{}) {
+	fileModel := param.(map[string]interface{})
+	srcImage, err := image.Open(fileModel["file"].(string))
+	if err != nil {
+		log.Errorf("%err\n", err)
+		return
+	}
+	uuid := fileModel["uuid"].(string)
+	carouselFile, err := srcImage.CreateCarousel(uuid, 1920, 1080, "jpg")
+	if err != nil {
+		log.Errorf("%err\n", err)
+		return
+	}
+	thumb, err := carouselFile.CreateThumb(uuid, 320, 180, "")
+	if err != nil {
+		log.Errorf("%err\n", err)
+		return
+	}
+	carousel, err := CarouselService.FindByUuid(uuid)
+	if err != nil {
+		log.Errorf("%err\n", err)
+		return
+	}
+	carousel.Url = fileLib.RelativePath(fileLib.Path(carouselFile.FullPath()))
+	carousel.Thumb = fileLib.RelativePath(fileLib.Path(thumb.FullPath()))
+	carousel.Width = 1920
+	carousel.Height = 1080
+	carousel.Status = model.CarouselStatusEnabled
+	result := carousel.DB().Save(&carousel)
+	if result.Error != nil {
+		log.Errorf("%err\n", result.Error)
+	}
+}
+
+func (service Carousel) Create(fileId int, title string, description string, link string, order int, switchType string, timeout int) (*model.Carousel, error) {
 	carouselLimit, _ := strconv.Atoi(SettingService.GetSetting(model.SettingKeyCarouselLimit))
 	carouselModel := &model.Carousel{}
 	connect := carouselModel.DB()
@@ -86,25 +123,26 @@ func (service Carousel) Create(fileId int, title string, description string, lin
 		return nil, errors.New("the carousels number is reached limit")
 	}
 	carousel := &model.Carousel{}
-	files, err := service.CreateFiles(fileId)
+	uuid := random.Uuid(false)
+	files, err := service.CreateFiles(uuid, fileId)
 	if err != nil {
 		return nil, err
 	}
+	carousel.Uuid = uuid
 	carousel.Type = files["type"].(string)
-	carousel.Url = files["url"].(string)
-	carousel.Thumb = files["thumb"].(string)
 	carousel.Height = files["height"].(int)
 	carousel.Width = files["width"].(int)
 	carousel.FileId = fileId
 	carousel.Link = link
 	carousel.Title = title
 	carousel.Description = description
+	carousel.Timeout = timeout
 	carousel.Order = order
-	carousel.Uuid = random.Uuid(false)
 	if switchType == "" {
 		switchType = model.SwitchTypeWebgl
 	}
 	carousel.SwitchType = switchType
+	carousel.Status = model.CarouselStatusPreparing
 	result = connect.Create(&carousel)
 	if result.Error != nil {
 		return nil, result.Error
@@ -116,7 +154,7 @@ func (service Carousel) Create(fileId int, title string, description string, lin
 	return carousel, nil
 }
 
-func (service Carousel) Update(id int, fileId int, title string, description string, link string, order int, switchType string) (*model.Carousel, error) {
+func (service Carousel) Update(id int, fileId int, title string, description string, link string, order int, switchType string, timeout int) (*model.Carousel, error) {
 	carousel := &model.Carousel{}
 	db := carousel.DB()
 	db.Where("id = ?", id)
@@ -126,15 +164,16 @@ func (service Carousel) Update(id int, fileId int, title string, description str
 		return nil, result.Error
 	}
 	db.Begin()
-	files, err := service.CreateFiles(fileId)
-	if err != nil {
-		return nil, err
+	if carousel.FileId != fileId {
+		files, err := service.CreateFiles(carousel.Uuid, fileId)
+		if err != nil {
+			return nil, err
+		}
+		carousel.Type = files["type"].(string)
+		carousel.Height = files["height"].(int)
+		carousel.Width = files["width"].(int)
+		carousel.Status = model.CarouselStatusPreparing
 	}
-	carousel.Type = files["type"].(string)
-	carousel.Url = files["url"].(string)
-	carousel.Thumb = files["thumb"].(string)
-	carousel.Height = files["height"].(int)
-	carousel.Width = files["width"].(int)
 	carousel.FileId = fileId
 	carousel.Link = link
 	if title != "" {
@@ -156,6 +195,13 @@ func (service Carousel) Update(id int, fileId int, title string, description str
 		switchType = model.SwitchTypeWebgl
 	}
 	carousel.SwitchType = switchType
+	if timeout < 3 {
+		timeout = 3
+	}
+	if timeout > 10 {
+		timeout = 10
+	}
+	carousel.Timeout = timeout
 	connect := carousel.DB()
 	result = connect.Save(&carousel)
 	if result.Error != nil {
@@ -164,22 +210,6 @@ func (service Carousel) Update(id int, fileId int, title string, description str
 	}
 	db.Commit()
 	return carousel, nil
-}
-
-func (service Carousel) Preview(fileId int) (string, error) {
-	one, err := FileService.FindOne(fileId)
-	if err != nil {
-		return "", err
-	}
-	open, err := image.Open(fileLib.FullPath(one.Preview))
-	if err != nil {
-		return "", err
-	}
-	carousel, err := open.CreateCarousel(1920, 1080, "jpg")
-	if err != nil {
-		return "", err
-	}
-	return fileLib.FullUrl(fileLib.RelativePath(fileLib.Path(carousel.FullPath()))), nil
 }
 
 func (service Carousel) Delete(id int) error {
