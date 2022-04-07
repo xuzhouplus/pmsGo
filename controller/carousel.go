@@ -64,12 +64,16 @@ func (ctl carousel) Index(ctx *gin.Context) {
 }
 
 func (ctl carousel) List(ctx *gin.Context) {
-	list, err := service.CarouselService.List(0, 0, nil, "", nil)
+	carousels, err := service.CarouselService.List(0, 0, nil, "", nil)
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, err.Error()))
 	} else {
 		data := make(map[string]interface{})
-		data["list"] = list
+		for index, carousel := range carousels {
+			carousels[index].Url = fileLib.FullUrl(carousel.Url)
+			carousels[index].Thumb = fileLib.FullUrl(carousel.Thumb)
+		}
+		data["list"] = carousels
 		carouselLimit, _ := strconv.Atoi(service.SettingService.GetSetting(model.SettingKeyCarouselLimit))
 		data["limit"] = carouselLimit
 		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeOk(), data, "获取轮播图列表成功"))
