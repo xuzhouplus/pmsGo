@@ -26,6 +26,7 @@ func (ctl carousel) Verbs() map[string][]string {
 	verbs["delete"] = []string{controller.Post}
 	verbs["preview"] = []string{controller.Post}
 	verbs["view"] = []string{controller.Get}
+	verbs["set-caption-style"] = []string{controller.Post}
 	return verbs
 }
 
@@ -180,4 +181,34 @@ func (ctl carousel) View(ctx *gin.Context) {
 		"thumb":  fileLib.FullUrl(carousel.Thumb),
 		"status": carousel.Status,
 	}, "获取成功"))
+}
+
+func (ctl carousel) SetCaptionStyle(ctx *gin.Context) {
+	requestData := &model.CaptionStyle{}
+	err := ctx.ShouldBind(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
+		return
+	}
+	queryId, _ := ctx.GetQuery("id")
+	if queryId == "" {
+		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, "缺少请求参数"))
+		return
+	}
+	carouselId, _ := strconv.Atoi(queryId)
+	carouselField, _ := ctx.GetQuery("field")
+	if carouselField == "" {
+		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, "缺少请求参数"))
+		return
+	}
+	if carouselField == "title" {
+		err = service.CarouselService.SetTitleStyle(carouselId, requestData)
+	} else {
+		err = service.CarouselService.SetDescriptionStyle(carouselId, requestData)
+	}
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, "保存失败"))
+		return
+	}
+	ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeOk(), nil, "设置成功"))
 }

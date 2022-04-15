@@ -6,6 +6,7 @@ import (
 	fileLib "pmsGo/lib/file"
 	"pmsGo/lib/file/image"
 	"pmsGo/lib/log"
+	"pmsGo/lib/security/json"
 	"pmsGo/lib/security/random"
 	"pmsGo/lib/sync"
 	"pmsGo/model"
@@ -212,6 +213,24 @@ func (service Carousel) Update(id int, fileId int, title string, description str
 	return carousel, nil
 }
 
+func (service Carousel) SetTitleStyle(id int, style *model.CaptionStyle) error {
+	carouselRecord, err := service.FindById(id)
+	if err != nil {
+		return err
+	}
+	carouselRecord.TitleStyle, _ = json.Encode(style)
+	return carouselRecord.Save()
+}
+
+func (service Carousel) SetDescriptionStyle(id int, style *model.CaptionStyle) error {
+	carouselRecord, err := service.FindById(id)
+	if err != nil {
+		return err
+	}
+	carouselRecord.DescriptionStyle, _ = json.Encode(style)
+	return carouselRecord.Save()
+}
+
 func (service Carousel) Delete(id int) error {
 	carousel := &model.Carousel{}
 	connect := carousel.DB()
@@ -277,9 +296,9 @@ func (service Carousel) UpdateOrder(from int, to int) error {
 	connect := one.DB()
 	var result *gorm.DB
 	if from < to {
-		result = connect.Where("order > ?", from).Where("order <= ?", to).Update("order", gorm.Expr("order - ?", 1))
+		result = connect.Where("`order` > ?", from).Where("`order` <= ?", to).Update("order", gorm.Expr("`order` - ?", 1))
 	} else {
-		result = connect.Where("order >= ?", to).Where("order < ?", from).Update("order", gorm.Expr("order + ?", 1))
+		result = connect.Where("`order` >= ?", to).Where("`order` < ?", from).Update("order", gorm.Expr("`order` + ?", 1))
 	}
 	if result.Error != nil {
 		return result.Error

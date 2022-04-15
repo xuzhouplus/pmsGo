@@ -18,25 +18,40 @@ const (
 )
 
 type Carousel struct {
-	ID          int    `gorm:"private_key" json:"id"`
-	Uuid        string `gorm:"index" json:"uuid"`
-	FileId      int    `json:"file_id"`
-	Type        string `json:"type"`
-	Title       string `json:"title"`
-	Url         string `json:"url"`
-	Width       int    `json:"width"`
-	Height      int    `json:"height"`
-	Description string `json:"description"`
-	Order       int    `json:"order"`
-	Thumb       string `json:"thumb"`
-	Link        string `json:"link"`
-	SwitchType  string `json:"switch_type"`
-	Timeout     int    `json:"timeout"`
-	Status      int    `json:"status"`
+	ID               int    `gorm:"private_key" json:"id"`
+	Uuid             string `gorm:"index" json:"uuid"`
+	FileId           int    `json:"file_id"`
+	Type             string `json:"type"`
+	Title            string `json:"title"`
+	Url              string `json:"url"`
+	Width            int    `json:"width"`
+	Height           int    `json:"height"`
+	Description      string `json:"description"`
+	Order            int    `json:"order"`
+	Thumb            string `json:"thumb"`
+	Link             string `json:"link"`
+	SwitchType       string `json:"switch_type"`
+	Timeout          int    `json:"timeout"`
+	Status           int    `json:"status"`
+	TitleStyle       string `json:"title_style"`
+	DescriptionStyle string `json:"description_style"`
+}
+
+type CaptionStyle struct {
+	FontFamily  string
+	FontSize    string
+	LetterSpace string
+	Top         string
+	Left        string
 }
 
 func (model *Carousel) DB() *gorm.DB {
 	return database.DB.Model(&model)
+}
+
+func (model Carousel) Save() error {
+	result := model.DB().Save(model)
+	return result.Error
 }
 
 func (model *Carousel) SetOrder(order interface{}) error {

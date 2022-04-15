@@ -12,3 +12,7 @@ ALTER TABLE `pms_files`
 
 ALTER TABLE `pms_carousels`
     ADD COLUMN `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态，1启用，0禁用' AFTER `timeout`;
+
+ALTER TABLE `pms_carousels`
+    ADD COLUMN `title_style` text NULL COMMENT '标题文字样式' AFTER `status`,
+ADD COLUMN `description_style` text NULL COMMENT '描述文字样式' AFTER `title_style`;
