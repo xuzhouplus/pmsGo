@@ -38,11 +38,11 @@ type Carousel struct {
 }
 
 type CaptionStyle struct {
-	FontFamily  string
-	FontSize    string
-	LetterSpace string
-	Top         string
-	Left        string
+	FontFamily  string `json:"font_family"`
+	FontSize    string `json:"font_size"`
+	LetterSpace string `json:"letter_space"`
+	Top         string `json:"top"`
+	Left        string `json:"left"`
 }
 
 func (model *Carousel) DB() *gorm.DB {

@@ -15,4 +15,5 @@ ALTER TABLE `pms_carousels`
 
 ALTER TABLE `pms_carousels`
     ADD COLUMN `title_style` text NULL COMMENT '标题文字样式' AFTER `status`,
+    
 ADD COLUMN `description_style` text NULL COMMENT '描述文字样式' AFTER `title_style`;

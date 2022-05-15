@@ -48,6 +48,8 @@ func (service Carousel) List(page int, size int, match map[string]interface{}, t
 		for field, sort := range order {
 			connect.Order("`" + field + "` " + sort)
 		}
+	} else {
+		connect.Order("`order` asc ")
 	}
 	if connect.Find(&carousels).Error != nil {
 		return nil, errors.New("获取轮播图列表失败")
@@ -304,4 +306,36 @@ func (service Carousel) UpdateOrder(from int, to int) error {
 		return result.Error
 	}
 	return nil
+}
+
+func (service Carousel) SortOrder(sortedOrder map[int]int) error {
+	carousel := &model.Carousel{}
+	connect := carousel.DB()
+	connect.Begin()
+	for id, order := range sortedOrder {
+		result := carousel.DB().Where("`id` = ?", id).Update("order", order)
+		if result.Error != nil {
+			connect.Rollback()
+			return result.Error
+		}
+	}
+	connect.Commit()
+	return nil
+}
+
+func (service Carousel) UpdateCaptionStyle(id interface{}, title interface{}, link interface{}, titleStyle interface{}, description interface{}, descriptionStyle interface{}) (*model.Carousel, error) {
+	carousel, err := service.FindById(int(id.(float64)))
+	if err != nil {
+		return nil, err
+	}
+	carousel.Title = title.(string)
+	carousel.Link = link.(string)
+	carousel.TitleStyle, _ = json.Encode(titleStyle)
+	carousel.Description = description.(string)
+	carousel.DescriptionStyle, _ = json.Encode(descriptionStyle)
+	err = carousel.Save()
+	if err != nil {
+		return nil, err
+	}
+	return carousel, nil
 }
