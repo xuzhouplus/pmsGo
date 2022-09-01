@@ -65,11 +65,11 @@ func (receiver *Video) Metadata() error {
 		return err
 	}
 }
-func (receiver Video) FileName() string {
+func (receiver *Video) FileName() string {
 	return strings.TrimSuffix(receiver.Name, receiver.Extension)
 }
 
-func (receiver Video) CreateThumb(width int, height int, ext string, time string) (string, <-chan transcoder.Progress, error) {
+func (receiver *Video) CreateThumb(width int, height int, ext string, time string) (string, <-chan transcoder.Progress, error) {
 	if time == "" {
 		time = "00:00:00"
 	}
@@ -100,7 +100,7 @@ func (receiver Video) CreateThumb(width int, height int, ext string, time string
 	return path, progressChannel, nil
 }
 
-func (receiver Video) CreateM3u8(width int, height int) (string, <-chan transcoder.Progress, error) {
+func (receiver *Video) CreateM3u8(width int, height int) (string, <-chan transcoder.Progress, error) {
 	widthSpread := strconv.Itoa(width)
 	heightSpread := strconv.Itoa(height)
 	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + widthSpread + "_" + heightSpread + ".m3u8"

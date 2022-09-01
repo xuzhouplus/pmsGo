@@ -15,6 +15,7 @@ const (
 	CarouselStatusDisabled  = 0
 	CarouselStatusPreparing = 1
 	CarouselStatusEnabled   = 2
+	CarouselStatusError     = 3
 )
 
 type Carousel struct {
@@ -35,6 +36,7 @@ type Carousel struct {
 	Status           int    `json:"status"`
 	TitleStyle       string `json:"title_style"`
 	DescriptionStyle string `json:"description_style"`
+	Error            string `json:"error"`
 }
 
 type CaptionStyle struct {
@@ -49,7 +51,7 @@ func (model *Carousel) DB() *gorm.DB {
 	return database.DB.Model(&model)
 }
 
-func (model Carousel) Save() error {
+func (model *Carousel) Save() error {
 	result := model.DB().Save(model)
 	return result.Error
 }

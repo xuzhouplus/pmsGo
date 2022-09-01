@@ -32,6 +32,7 @@ func (ctl admin) Verbs() map[string][]string {
 	verbs["logout"] = []string{controller.Post}
 	verbs["profile"] = []string{controller.Post, controller.Get}
 	verbs["connects"] = []string{controller.Get}
+	verbs["callback"] = []string{controller.Get}
 	return verbs
 }
 

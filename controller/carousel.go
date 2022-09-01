@@ -29,6 +29,7 @@ func (ctl carousel) Verbs() map[string][]string {
 	verbs["view"] = []string{controller.Get}
 	verbs["sort-order"] = []string{controller.Post}
 	verbs["update-caption-style"] = []string{controller.Post}
+	verbs["set-switch-type"] = []string{controller.Post}
 	return verbs
 }
 
@@ -266,7 +267,49 @@ func (ctl carousel) UpdateCaptionStyle(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return
 	}
-	carousel, err := service.CarouselService.UpdateCaptionStyle(requestData["id"], requestData["title"], requestData["link"], requestData["title_style"], requestData["description"], requestData["description_style"])
+	carousel, err := service.CarouselService.UpdateCaptionStyle(requestData["id"], requestData["title"], requestData["link"], requestData["title_style"], requestData["description"], requestData["description_style"], requestData["switch_type"])
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
+		return
+	}
+	var titleStyle = &model.CaptionStyle{}
+	err = json.Decode(carousel.TitleStyle, &titleStyle)
+	if err != nil {
+		log.Warnf("标题样式无法解析%v", carousel.ID)
+	}
+	var descriptionStyle = &model.CaptionStyle{}
+	err = json.Decode(carousel.DescriptionStyle, &descriptionStyle)
+	if err != nil {
+		log.Warnf("描述样式无法解析%v", carousel.ID)
+	}
+	result := map[string]interface{}{
+		"id":                carousel.ID,
+		"uuid":              carousel.Uuid,
+		"type":              carousel.Type,
+		"title":             carousel.Title,
+		"description":       carousel.Description,
+		"thumb":             fileLib.FullUrl(carousel.Thumb),
+		"url":               fileLib.FullUrl(carousel.Url),
+		"width":             carousel.Width,
+		"height":            carousel.Height,
+		"link":              carousel.Link,
+		"switch_type":       carousel.SwitchType,
+		"status":            carousel.Status,
+		"timeout":           carousel.Timeout,
+		"title_style":       titleStyle,
+		"description_style": descriptionStyle,
+	}
+	ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeOk(), result, "设置成功"))
+}
+
+func (ctl carousel) SetSwitchType(ctx *gin.Context) {
+	requestData := make(map[string]interface{})
+	err := ctx.ShouldBind(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
+		return
+	}
+	carousel, err := service.CarouselService.SetSwitchType(requestData["id"], requestData["switch_type"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.ResponseFail(nil, err.Error()))
 		return

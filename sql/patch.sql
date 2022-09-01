@@ -5,6 +5,9 @@ ALTER TABLE `pms_files`
     ADD COLUMN `poster` varchar(255) NULL COMMENT '封面图' AFTER `name`;
 
 ALTER TABLE `pms_carousels`
+    ADD COLUMN `switch_type` varchar(255) NULL COMMENT '切换类型';
+
+ALTER TABLE `pms_carousels`
     ADD COLUMN `timeout` int NULL COMMENT '展示时长，单位s' AFTER `switch_type`;
 
 ALTER TABLE `pms_files`
@@ -17,3 +20,9 @@ ALTER TABLE `pms_carousels`
     ADD COLUMN `title_style` text NULL COMMENT '标题文字样式' AFTER `status`,
     
 ADD COLUMN `description_style` text NULL COMMENT '描述文字样式' AFTER `title_style`;
+
+ALTER TABLE `pms_files`
+    ADD COLUMN `error` text NULL COMMENT '任务处理错误' AFTER `status`;
+
+ALTER TABLE `pms_carousels`
+    ADD COLUMN `error` text NULL COMMENT '任务处理错误' AFTER `description_style`;

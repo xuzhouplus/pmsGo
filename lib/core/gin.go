@@ -80,7 +80,7 @@ func (e *Engine) Start(listen string) error {
 	return nil
 }
 
-func (e Engine) Pprof(listen string) {
+func (e *Engine) Pprof(listen string) {
 	go func() {
 		http.ListenAndServe(listen, nil)
 	}()

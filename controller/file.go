@@ -21,6 +21,8 @@ func (cto file) Verbs() map[string][]string {
 	verbs["upload"] = []string{controller.Post, controller.Get}
 	verbs["delete"] = []string{controller.Post}
 	verbs["detail"] = []string{controller.Get}
+	verbs["extractFrame"] = []string{controller.Post}
+	verbs["getFrame"] = []string{controller.Get}
 	return verbs
 }
 
@@ -31,6 +33,7 @@ func (cto file) Authenticator() controller.Authenticator {
 	}
 	return authenticator
 }
+
 func (cto file) Index(ctx *gin.Context) {
 	page := ctx.Query("page")
 	pageNum, _ := strconv.Atoi(page)
@@ -84,6 +87,31 @@ func (cto file) Upload(ctx *gin.Context) {
 		}
 	}
 	ctx.JSON(http.StatusOK, cto.ResponseOk(fileModel, "success"))
+}
+
+func (cto file) ExtractFrame(ctx *gin.Context) {
+	requestData := make(map[string]interface{})
+	err := ctx.ShouldBindJSON(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+		return
+	}
+	taskId, err := service.FileService.ExtractFrame(requestData["file_id"].(string), requestData["point"].(int64), requestData["width"].(int64), requestData["height"].(int64))
+	if err != nil {
+		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+		return
+	}
+	ctx.JSON(http.StatusOK, cto.ResponseOk(taskId, "发起抽帧成功"))
+}
+
+func (cto file) GetFrame(ctx *gin.Context) {
+	taskId := ctx.Query("task_id")
+	if taskId == "" {
+		ctx.JSON(http.StatusOK, cto.ResponseFail("", "缺少任务参数"))
+		return
+	}
+	result := service.FileService.GetFrame(taskId)
+	ctx.JSON(http.StatusOK, cto.ResponseOk(result, "发起抽帧成功"))
 }
 
 func (cto file) Delete(ctx *gin.Context) {

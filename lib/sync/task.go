@@ -17,10 +17,10 @@ const (
 )
 
 var (
-	poolNum       int
-	taskPool      sync.Pool
-	taskChan      chan *Task
-	taskProcessor map[string]Processor
+	poolNum    int
+	taskPool   sync.Pool
+	taskChan   chan *Task
+	taskWorker map[string]Worker
 )
 
 func init() {
@@ -32,40 +32,43 @@ func init() {
 		return &Task{}
 	}}
 	taskChan = make(chan *Task, poolNum)
-	taskProcessor = make(map[string]Processor)
+	taskWorker = make(map[string]Worker)
 }
 func Run() {
 	InitTaskReceiver(poolNum)
 }
 
-type Processor func(param interface{})
-
-func RegisterProcessor(key string, processor Processor) {
-	taskProcessor[key] = processor
+func RegisterWorker(key string, processor Worker) error {
+	if taskWorker[key] != nil {
+		return errors.New("worker already existed")
+	}
+	taskWorker[key] = processor
+	return nil
 }
 
-func UnregisterProcessor(key string) {
-	delete(taskProcessor, key)
+func UnregisterWorker(key string) {
+	delete(taskWorker, key)
 }
 
-func DispatchProcessor(key string) Processor {
-	return taskProcessor[key]
+func DispatchWorker(key string) Worker {
+	return taskWorker[key]
 }
 
 type Task struct {
-	Key       string
-	Param     interface{}
-	UUID      string
-	processor Processor
+	Key    string
+	Param  interface{}
+	UUID   string
+	Worker Worker
 }
 
-func NewTask(key string, param interface{}) error {
+func NewTask(key string, param interface{}) (*Task, error) {
 	uuid := random.Uuid(false)
 	task := &Task{}
 	task.UUID = uuid
 	task.Key = key
 	task.Param = param
-	return AddTask(task)
+	err := AddTask(task)
+	return task, err
 }
 
 func AddTask(task *Task) error {
@@ -95,7 +98,12 @@ func GetTask() (*Task, error) {
 func taskReceiver() {
 	for {
 		task := <-taskChan
-		task.processor(task.Param)
+		result, err := task.Worker.Process(task.UUID, task.Param)
+		if err != nil {
+			task.Worker.Fallback(task.UUID, task.Param, err)
+		} else {
+			task.Worker.Callback(task.UUID, task.Param, result)
+		}
 		taskPool.Put(task)
 	}
 }
@@ -113,7 +121,7 @@ func taskDispatcher() {
 				taskProcess := taskWorker.(*Task)
 				taskProcess.UUID = taskData.UUID
 				taskProcess.Param = taskData.Param
-				taskProcess.processor = DispatchProcessor(taskData.Key)
+				taskProcess.Worker = DispatchWorker(taskData.Key)
 				taskChan <- taskProcess
 				break
 			} else {

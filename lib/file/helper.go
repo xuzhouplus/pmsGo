@@ -109,6 +109,7 @@ func ChunkCheck(ctx *gin.Context) bool {
 	return false
 }
 
+// ChunkUpload Resumablejs分片上传
 func ChunkUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, error) {
 	upload := &Upload{}
 	upload.ctx = ctx
@@ -131,9 +132,9 @@ func ChunkUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, er
 	if cacheData == nil {
 		now := time.Now()
 		date := now.Format("2006-01-02")
-		upload.File = "/" + subDir + "/" + date + "/" + upload.Uuid + "/source." + upload.Extension
+		upload.File = "/" + subDir + "/" + date + "/" + upload.Uuid + "/source" + upload.Extension
 		filePath = GetPath() + upload.File
-		filePath = filepath.ToSlash(filePath)
+		filePath = filepath.FromSlash(filePath)
 		total, err := strconv.Atoi(ctx.PostForm("total"))
 		if err != nil {
 			return nil, err
@@ -244,11 +245,11 @@ func Base64Upload(base64Content string, subDir string) (*Upload, error) {
 }
 
 func GetPath() string {
-	return config.Config.Web.Upload.Path
+	return filepath.FromSlash(config.Config.Web.Upload.Path)
 }
 
 func GetUrl() string {
-	return config.Config.Web.Upload.Url
+	return filepath.ToSlash(config.Config.Web.Upload.Url)
 }
 
 // GetFileType 获取文件类型
@@ -311,7 +312,7 @@ func PathToUrl(path Path) Url {
 		return ""
 	}
 	pathString := string(path)
-	pathString = filepath.FromSlash(pathString)
+	pathString = filepath.ToSlash(pathString)
 	pathString = strings.Replace(pathString, GetPath(), GetUrl(), 1)
 	return Url(filepath.ToSlash(pathString))
 }
@@ -321,7 +322,7 @@ func UrlToPath(url Url) Path {
 		return ""
 	}
 	urlString := string(url)
-	urlString = filepath.ToSlash(urlString)
+	urlString = filepath.FromSlash(urlString)
 	urlString = strings.Replace(urlString, GetUrl(), GetPath(), 1)
 	return Path(filepath.FromSlash(urlString))
 }

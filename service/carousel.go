@@ -4,22 +4,13 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	fileLib "pmsGo/lib/file"
-	"pmsGo/lib/file/image"
-	"pmsGo/lib/log"
 	"pmsGo/lib/security/json"
 	"pmsGo/lib/security/random"
 	"pmsGo/lib/sync"
 	"pmsGo/model"
+	"pmsGo/worker"
 	"strconv"
 )
-
-const (
-	CreateCarouselSyncTaskKey = "CreateCarousel"
-)
-
-func init() {
-	sync.RegisterProcessor(CreateCarouselSyncTaskKey, CreateCarousel)
-}
 
 type Carousel struct {
 }
@@ -65,52 +56,21 @@ func (service Carousel) CreateFiles(uuid string, fileId int) (map[string]interfa
 	if uuid == "" {
 		uuid = random.Uuid(false)
 	}
-	err = sync.NewTask(CreateCarouselSyncTaskKey, map[string]interface{}{
-		"uuid": uuid,
-		"file": fileLib.FullPath(file.Path),
+	task, err := sync.NewTask(worker.CarouselWorkerName, map[string]interface{}{
+		"uuid":   uuid,
+		"path":   fileLib.FullPath(file.Path),
+		"width":  1920,
+		"height": 1080,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"type":   file.Type,
-		"height": 1920,
-		"width":  1080,
+		"task_id": task.UUID,
+		"type":    file.Type,
+		"height":  1920,
+		"width":   1080,
 	}, nil
-}
-
-func CreateCarousel(param interface{}) {
-	fileModel := param.(map[string]interface{})
-	srcImage, err := image.Open(fileModel["file"].(string))
-	if err != nil {
-		log.Errorf("%err\n", err)
-		return
-	}
-	uuid := fileModel["uuid"].(string)
-	carouselFile, err := srcImage.CreateCarousel(uuid, 1920, 1080, "jpg")
-	if err != nil {
-		log.Errorf("%err\n", err)
-		return
-	}
-	thumb, err := carouselFile.CreateThumb(uuid, 320, 180, "")
-	if err != nil {
-		log.Errorf("%err\n", err)
-		return
-	}
-	carousel, err := CarouselService.FindByUuid(uuid)
-	if err != nil {
-		log.Errorf("%err\n", err)
-		return
-	}
-	carousel.Url = fileLib.RelativePath(fileLib.Path(carouselFile.FullPath()))
-	carousel.Thumb = fileLib.RelativePath(fileLib.Path(thumb.FullPath()))
-	carousel.Width = 1920
-	carousel.Height = 1080
-	carousel.Status = model.CarouselStatusEnabled
-	result := carousel.DB().Save(&carousel)
-	if result.Error != nil {
-		log.Errorf("%err\n", result.Error)
-	}
 }
 
 func (service Carousel) Create(fileId int, title string, description string, link string, order int, switchType string, timeout int) (*model.Carousel, error) {
@@ -323,7 +283,7 @@ func (service Carousel) SortOrder(sortedOrder map[int]int) error {
 	return nil
 }
 
-func (service Carousel) UpdateCaptionStyle(id interface{}, title interface{}, link interface{}, titleStyle interface{}, description interface{}, descriptionStyle interface{}) (*model.Carousel, error) {
+func (service Carousel) UpdateCaptionStyle(id interface{}, title interface{}, link interface{}, titleStyle interface{}, description interface{}, descriptionStyle interface{}, switchType interface{}) (*model.Carousel, error) {
 	carousel, err := service.FindById(int(id.(float64)))
 	if err != nil {
 		return nil, err
@@ -333,6 +293,20 @@ func (service Carousel) UpdateCaptionStyle(id interface{}, title interface{}, li
 	carousel.TitleStyle, _ = json.Encode(titleStyle)
 	carousel.Description = description.(string)
 	carousel.DescriptionStyle, _ = json.Encode(descriptionStyle)
+	carousel.SwitchType = switchType.(string)
+	err = carousel.Save()
+	if err != nil {
+		return nil, err
+	}
+	return carousel, nil
+}
+
+func (service Carousel) SetSwitchType(id interface{}, switchType interface{}) (*model.Carousel, error) {
+	carousel, err := service.FindById(int(id.(float64)))
+	if err != nil {
+		return nil, err
+	}
+	carousel.SwitchType = switchType.(string)
 	err = carousel.Save()
 	if err != nil {
 		return nil, err

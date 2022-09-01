@@ -106,7 +106,7 @@ func (img Image) Save(filePath string, opt imaging.EncodeOption) (*Image, error)
 	return rst, nil
 }
 
-func (img Image) CreateCarousel(uuid string, width int, height int, extension string) (*Image, error) {
+func (img Image) CreateCarousel(destName string, width int, height int, extension string) (*Image, error) {
 	if extension == "" {
 		extension = strings.TrimPrefix(img.Extension, ".")
 	}
@@ -117,7 +117,7 @@ func (img Image) CreateCarousel(uuid string, width int, height int, extension st
 		fg = imaging.Fit(img.Image, width, height, imaging.Lanczos)
 	}
 	dst := imaging.OverlayCenter(bg, fg, 1.0)
-	tg := img.Path + string(filepath.Separator) + uuid + "_" + strconv.Itoa(bg.Bounds().Size().X) + "_" + strconv.Itoa(bg.Bounds().Size().Y) + "." + extension
+	tg := img.Path + string(filepath.Separator) + destName + "." + extension
 	err := imaging.Save(dst, tg)
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (img Image) CreateCarousel(uuid string, width int, height int, extension st
 	return carousel, nil
 }
 
-func (img Image) CreateThumb(uuid string, width int, height int, ext string) (*Image, error) {
+func (img Image) CreateResize(destName string, width int, height int, ext string) (*Image, error) {
 	if ext == "" {
 		ext = strings.TrimPrefix(img.Extension, ".")
 	}
@@ -141,7 +141,7 @@ func (img Image) CreateThumb(uuid string, width int, height int, ext string) (*I
 		bg = imaging.New(width, height, color.White)
 	}
 	dst := imaging.OverlayCenter(bg, fg, 1)
-	path := img.Path + string(filepath.Separator) + uuid + "_" + strconv.Itoa(width) + "_" + strconv.Itoa(height) + "." + ext
+	path := img.Path + string(filepath.Separator) + destName + "_" + strconv.Itoa(width) + "_" + strconv.Itoa(height) + "." + ext
 	err := imaging.Save(dst, path)
 	if err != nil {
 		return nil, err
@@ -153,10 +153,10 @@ func (img Image) CreateThumb(uuid string, width int, height int, ext string) (*I
 	return target, nil
 }
 
-func (img Image) CreatePreview(quality int) (*Image, error) {
+func (img Image) CreateCompress(destName string, quality int) (*Image, error) {
 	switch img.MimeType {
 	case MimeTypePng:
-		target := img.Path + string(filepath.Separator) + img.FileName() + "_" + strconv.Itoa(quality) + img.Extension
+		target := img.Path + string(filepath.Separator) + destName + "_" + strconv.Itoa(quality) + img.Extension
 		level := png.DefaultCompression
 		if quality >= 75 && quality < 100 {
 			level = png.NoCompression

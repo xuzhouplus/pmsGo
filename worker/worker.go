@@ -1,0 +1,41 @@
+package worker
+
+import (
+	"context"
+	"pmsGo/lib/cache"
+	"pmsGo/lib/sync"
+	"time"
+)
+
+const TaskProcessCachePrefix = "task_process:"
+
+func init() {
+	sync.RegisterWorker(CarouselWorkerName, &CarouselWorker{})
+	sync.RegisterWorker(ImageWorkerName, &ImageWorker{})
+	sync.RegisterWorker(VideoWorkerName, &VideoWorker{})
+}
+
+func SetTaskProcessStatus(taskId string, stepName string, status map[string]interface{}) {
+	cache.Redis.HSet(context.TODO(), TaskProcessCachePrefix+taskId, stepName, status)
+}
+
+func ClearTaskProcessStatus(taskId string) {
+	cache.Redis.Del(context.TODO(), TaskProcessCachePrefix+taskId)
+}
+
+func SetStatusExpire(taskId string) {
+	cache.Redis.Expire(context.TODO(), TaskProcessCachePrefix+taskId, time.Hour)
+}
+
+func TaskSteps(steps interface{}) []string {
+	taskStep := make([]string, 0)
+	if steps == nil {
+		return taskStep
+	}
+	actionSteps := steps.([]interface{})
+	for _, step := range actionSteps {
+		actionStep := step.(string)
+		taskStep = append(taskStep, actionStep)
+	}
+	return taskStep
+}

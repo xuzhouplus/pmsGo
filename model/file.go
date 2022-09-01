@@ -2,7 +2,7 @@ package model
 
 import (
 	"gorm.io/gorm"
-	"pmsGo/lib/config"
+	"os"
 	"pmsGo/lib/database"
 	fileLib "pmsGo/lib/file"
 )
@@ -21,12 +21,14 @@ type File struct {
 	Description string `json:"description"`
 	Preview     string `json:"preview"`
 	Status      int    `json:"status"`
+	Error       string `json:"error"`
 }
 
 const (
-	StatusUploaded   = 0
-	StatusProcessing = 1
-	StatusEnabled    = 2
+	FileStatusUploaded   = 0
+	FileStatusProcessing = 1
+	FileStatusEnabled    = 2
+	FileStatusError      = 3
 )
 
 func (model *File) DB() *gorm.DB {
@@ -65,7 +67,7 @@ func (model File) RemovePreview() error {
 }
 
 func (model File) RemoveDir() error {
-	return fileLib.Remove(config.Config.Web.Upload.Path + "/" + model.Uuid)
+	return fileLib.Remove(fileLib.GetPath() + string(os.PathSeparator) + model.Uuid)
 }
 
 func (model *File) Update(field string, value interface{}) error {
