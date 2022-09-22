@@ -16,14 +16,23 @@ func init() {
 }
 
 func SetTaskProcessStatus(taskId string, stepName string, status map[string]interface{}) {
+	if taskId == "" {
+		return
+	}
 	cache.Redis.HSet(context.TODO(), TaskProcessCachePrefix+taskId, stepName, status)
 }
 
 func ClearTaskProcessStatus(taskId string) {
+	if taskId == "" {
+		return
+	}
 	cache.Redis.Del(context.TODO(), TaskProcessCachePrefix+taskId)
 }
 
 func SetStatusExpire(taskId string) {
+	if taskId == "" {
+		return
+	}
 	cache.Redis.Expire(context.TODO(), TaskProcessCachePrefix+taskId, time.Hour)
 }
 
@@ -32,10 +41,17 @@ func TaskSteps(steps interface{}) []string {
 	if steps == nil {
 		return taskStep
 	}
-	actionSteps := steps.([]interface{})
-	for _, step := range actionSteps {
-		actionStep := step.(string)
-		taskStep = append(taskStep, actionStep)
+	switch steps.(type) {
+	case []interface{}:
+		actionSteps := steps.([]interface{})
+		for _, step := range actionSteps {
+			actionStep := step.(string)
+			taskStep = append(taskStep, actionStep)
+		}
+		return taskStep
+	case []string:
+		return steps.([]string)
+	default:
+		panic("steps类型错误")
 	}
-	return taskStep
 }

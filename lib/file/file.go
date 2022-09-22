@@ -6,6 +6,7 @@ import (
 )
 
 type File struct {
+	Source    string `json:"source"`
 	Name      string `json:"name"`
 	Path      string `json:"path"`
 	Size      string `json:"size"`

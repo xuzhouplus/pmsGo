@@ -141,7 +141,7 @@ func (img Image) CreateResize(destName string, width int, height int, ext string
 		bg = imaging.New(width, height, color.White)
 	}
 	dst := imaging.OverlayCenter(bg, fg, 1)
-	path := img.Path + string(filepath.Separator) + destName + "_" + strconv.Itoa(width) + "_" + strconv.Itoa(height) + "." + ext
+	path := img.Path + string(filepath.Separator) + destName + "." + ext
 	err := imaging.Save(dst, path)
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (img Image) CreateResize(destName string, width int, height int, ext string
 func (img Image) CreateCompress(destName string, quality int) (*Image, error) {
 	switch img.MimeType {
 	case MimeTypePng:
-		target := img.Path + string(filepath.Separator) + destName + "_" + strconv.Itoa(quality) + img.Extension
+		target := img.Path + string(filepath.Separator) + destName + img.Extension
 		level := png.DefaultCompression
 		if quality >= 75 && quality < 100 {
 			level = png.NoCompression

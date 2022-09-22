@@ -283,6 +283,10 @@ func Remove(fullPath string) error {
 	return nil
 }
 
+func RemoveAll(path string) error {
+	return os.RemoveAll(path)
+}
+
 func FullUrl(relativeUrl string) string {
 	if relativeUrl == "" {
 		return ""

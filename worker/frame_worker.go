@@ -16,16 +16,21 @@ type FrameJob struct {
 }
 
 func (FrameWorker) Process(taskId string, params interface{}) (result interface{}, err error) {
-	taskParams := params.(FrameJob)
+	taskParams := params.(*FrameJob)
 	video, err := OpenVideo(taskParams.Path)
 	if err != nil {
 		return nil, err
 	}
-	frame, err := createVideoFrame(taskId, video, map[string]interface{}{
-		"seek":   taskParams.Seek,
-		"width":  taskParams.Width,
-		"height": taskParams.Height,
-	})
+	frameParams := map[string]interface{}{
+		"seek": taskParams.Seek,
+	}
+	if taskParams.Width == 0 {
+		frameParams["width"] = video.Width
+	}
+	if taskParams.Height == 0 {
+		frameParams["height"] = video.Height
+	}
+	frame, err := createVideoFrame(taskId, video, frameParams)
 	if err != nil {
 		return nil, err
 	}

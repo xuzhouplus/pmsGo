@@ -21,8 +21,8 @@ func (cto file) Verbs() map[string][]string {
 	verbs["upload"] = []string{controller.Post, controller.Get}
 	verbs["delete"] = []string{controller.Post}
 	verbs["detail"] = []string{controller.Get}
-	verbs["extractFrame"] = []string{controller.Post}
-	verbs["getFrame"] = []string{controller.Get}
+	verbs["extract-frame"] = []string{controller.Post}
+	verbs["capture-poster"] = []string{controller.Post}
 	return verbs
 }
 
@@ -96,7 +96,7 @@ func (cto file) ExtractFrame(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 		return
 	}
-	taskId, err := service.FileService.ExtractFrame(requestData["file_id"].(string), requestData["point"].(int64), requestData["width"].(int64), requestData["height"].(int64))
+	taskId, err := service.FileService.ExtractFrame(requestData["file_id"], requestData["seek"], requestData["width"], requestData["height"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 		return
@@ -104,24 +104,25 @@ func (cto file) ExtractFrame(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, cto.ResponseOk(taskId, "发起抽帧成功"))
 }
 
-func (cto file) GetFrame(ctx *gin.Context) {
-	taskId := ctx.Query("task_id")
-	if taskId == "" {
-		ctx.JSON(http.StatusOK, cto.ResponseFail("", "缺少任务参数"))
-		return
-	}
-	result := service.FileService.GetFrame(taskId)
-	ctx.JSON(http.StatusOK, cto.ResponseOk(result, "发起抽帧成功"))
-}
-
-func (cto file) Delete(ctx *gin.Context) {
-	requestData := make(map[string]int)
+func (cto file) CapturePoster(ctx *gin.Context) {
+	requestData := make(map[string]interface{})
 	err := ctx.ShouldBindJSON(&requestData)
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 		return
 	}
-	err = service.FileService.Delete(requestData["id"])
+	result := service.FileService.CapturePoster(requestData["file_id"], requestData["seek"], requestData["width"], requestData["height"])
+	ctx.JSON(http.StatusOK, cto.ResponseOk(result, "发起抽帧成功"))
+}
+
+func (cto file) Delete(ctx *gin.Context) {
+	requestData := make(map[string]string)
+	err := ctx.ShouldBindJSON(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+		return
+	}
+	err = service.FileService.Delete(requestData["uuid"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 		return
@@ -139,5 +140,8 @@ func (cto file) Detail(ctx *gin.Context) {
 	one.Path = fileLib.FullUrl(one.Path)
 	one.Thumb = fileLib.FullUrl(one.Thumb)
 	one.Preview = fileLib.FullUrl(one.Preview)
+	if one.Poster != "" {
+		one.Poster = fileLib.FullUrl(one.Poster)
+	}
 	ctx.JSON(http.StatusOK, cto.ResponseOk(one, "success"))
 }

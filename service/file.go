@@ -7,6 +7,8 @@ import (
 	"pmsGo/lib/cache"
 	"pmsGo/lib/config"
 	fileLib "pmsGo/lib/file"
+	"pmsGo/lib/file/image"
+	"pmsGo/lib/log"
 	"pmsGo/lib/sync"
 	"pmsGo/model"
 	"pmsGo/worker"
@@ -72,6 +74,9 @@ func (service File) List(page int, limit int, fields []string, fileType string, 
 			f.Path = fileLib.FullUrl(f.Path)
 			f.Thumb = fileLib.FullUrl(f.Thumb)
 			f.Preview = fileLib.FullUrl(f.Preview)
+			if f.Poster != "" {
+				f.Poster = fileLib.FullUrl(f.Poster)
+			}
 			files[i] = f
 		}
 	}
@@ -128,10 +133,10 @@ func (service File) FindByUuid(uuid string) (*model.File, error) {
 	return one, nil
 }
 
-func (service File) Delete(id int) error {
+func (service File) Delete(uuid string) error {
 	var one model.File
 	connect := one.DB()
-	connect.Where("id = ?", id)
+	connect.Where("uuid = ?", uuid)
 	connect.Limit(1)
 	err := connect.Find(&one).Error
 	if err != nil {
@@ -141,19 +146,7 @@ func (service File) Delete(id int) error {
 	if result.Error != nil {
 		return result.Error
 	}
-	err = one.RemoveFile()
-	if err != nil {
-		return err
-	}
-	err = one.RemoveThumb()
-	if err != nil {
-		return err
-	}
-	err = one.RemovePreview()
-	if err != nil {
-		return err
-	}
-	err = one.RemoveDir()
+	err = one.RemoveAll()
 	if err != nil {
 		return err
 	}
@@ -162,7 +155,6 @@ func (service File) Delete(id int) error {
 
 func (service File) ProcessImage(image *model.File) error {
 	task, err := sync.NewTask(worker.ImageWorkerName, map[string]interface{}{
-		"id":    image.ID,
 		"uuid":  image.Uuid,
 		"path":  fileLib.FullPath(image.Path),
 		"steps": []string{worker.ImageWorkerCreateThumbStepName, worker.ImageWorkerCreatePreviewStepName},
@@ -176,7 +168,7 @@ func (service File) ProcessImage(image *model.File) error {
 
 func (service File) ProcessVideo(fileModel *model.File) error {
 	task, err := sync.NewTask(worker.VideoWorkerName, map[string]interface{}{
-		"id":    fileModel.ID,
+		"uuid":  fileModel.Uuid,
 		"path":  fileLib.FullPath(fileModel.Path),
 		"steps": []string{worker.VideoWorkerCreateThumbStepName, worker.VideoWorkerCreatePosterStepName, worker.VideoWorkerCreateM3u8StepName},
 	})
@@ -188,42 +180,100 @@ func (service File) ProcessVideo(fileModel *model.File) error {
 	return nil
 }
 
-func (service File) ExtractFrame(fileId string, point int64, width int64, height int64) (string, error) {
-	fileModel, err := service.FindByUuid(fileId)
+func (service File) ExtractFrame(fileId interface{}, point interface{}, width interface{}, height interface{}) (map[string]string, error) {
+	fileModel, err := service.FindByUuid(fileId.(string))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	taskJob := &worker.FrameJob{
-		Path:     fileLib.FullPath(fileModel.Path),
-		Seek:     int(point),
-		Width:    int(width),
-		Height:   int(height),
-		Callback: ExtractFrameCallback,
-		Fallback: ExtractFrameFallback,
+		Path: fileLib.FullPath(fileModel.Path),
 	}
-	task, err := sync.NewTask(worker.FrameWorkerName, taskJob)
+	if point != nil {
+		taskJob.Seek = int(point.(float64))
+	}
+	if width != nil {
+		taskJob.Width = int(width.(float64))
+	}
+	if height != nil {
+		taskJob.Height = int(height.(float64))
+	}
+	frameWorker := worker.FrameWorker{}
+	result, err := frameWorker.Process(fileModel.Uuid, taskJob)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return task.UUID, nil
+	return map[string]string{
+		"path": result.(string),
+		"url":  fileLib.FullUrl(result.(string)),
+	}, nil
 }
 
-const ExtractFrameCachePrefix = "extract_frame:"
-
-func ExtractFrameFallback(taskId string, params interface{}, err error) {
-	cache.Redis.Set(context.TODO(), ExtractFrameCachePrefix+taskId, map[string]string{
-		"status": "fail",
-		"error":  err.Error(),
-	}, time.Hour*24)
+func (service File) SetPoster(fileId string, posterPath string) error {
+	fileModel, err := service.FindByUuid(fileId)
+	if err != nil {
+		return err
+	}
+	fullPath := fileLib.FullPath(posterPath)
+	_, err = image.Open(fullPath)
+	if err != nil {
+		return err
+	}
+	fileModel.Poster = fileLib.RelativeUrl(fileLib.PathToUrl(fileLib.Path(fullPath)))
+	imageWorker := worker.ImageWorker{}
+	thumbResult, err := imageWorker.Process(fileModel.Uuid, map[string]interface{}{
+		"path":  fullPath,
+		"steps": []string{worker.ImageWorkerCreateThumbStepName},
+	})
+	thumbMap := thumbResult.(map[string]string)
+	fileModel.Thumb = string(fileLib.PathToUrl(fileLib.Path(thumbMap["thumb"])))
+	db := fileModel.DB().Where("id = ?", fileModel.ID).Updates(fileModel)
+	if db.Error != nil {
+		log.Errorf("%err\n", db.Error)
+		return db.Error
+	}
+	return nil
 }
 
-func ExtractFrameCallback(taskId string, params interface{}, result interface{}) {
-	cache.Redis.Set(context.TODO(), ExtractFrameCachePrefix+taskId, map[string]interface{}{
-		"status": "fail",
-		"result": result,
-	}, time.Hour*24)
-}
-
-func (service File) GetFrame(taskId string) interface{} {
-	return cache.Redis.Get(context.TODO(), ExtractFrameCachePrefix+taskId)
+func (service File) CapturePoster(fileId interface{}, point interface{}, width interface{}, height interface{}) error {
+	fileModel, err := service.FindByUuid(fileId.(string))
+	if err != nil {
+		return err
+	}
+	taskJob := &worker.FrameJob{
+		Path: fileLib.FullPath(fileModel.Path),
+	}
+	if point != nil {
+		taskJob.Seek = int(point.(float64))
+	}
+	if width != nil {
+		taskJob.Width = int(width.(float64))
+	}
+	if height != nil {
+		taskJob.Height = int(height.(float64))
+	}
+	log.Errorf("%V", taskJob)
+	frameWorker := worker.FrameWorker{}
+	posterResult, err := frameWorker.Process(fileModel.Uuid, taskJob)
+	if err != nil {
+		return err
+	}
+	fileModel.Poster = string(fileLib.PathToUrl(fileLib.Path(posterResult.(string))))
+	imageWorker := worker.ImageWorker{}
+	thumbResult, err := imageWorker.Process(fileModel.Uuid, map[string]interface{}{
+		"path":  fileLib.FullPath(posterResult.(string)),
+		"steps": []string{worker.ImageWorkerCreateThumbStepName},
+		"uuid":  fileModel.Uuid,
+		"name":  "320_180",
+	})
+	if err != nil {
+		return err
+	}
+	thumbMap := thumbResult.(map[string]interface{})
+	fileModel.Thumb = string(fileLib.PathToUrl(fileLib.Path(thumbMap["thumb"].(string))))
+	db := fileModel.DB().Where("id = ?", fileModel.ID).Updates(fileModel)
+	if db.Error != nil {
+		log.Errorf("%err\n", db.Error)
+		return db.Error
+	}
+	return nil
 }

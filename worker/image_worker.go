@@ -52,7 +52,7 @@ func (ImageWorker) Fallback(taskId string, params interface{}, err error) {
 		Status: model.FileStatusError,
 		Error:  err.Error(),
 	}
-	db := videoModel.DB().Where("id = ?", taskParams["id"]).Updates(videoModel)
+	db := videoModel.DB().Where("uuid = ?", taskParams["uuid"]).Updates(videoModel)
 	if db.Error != nil {
 		log.Errorf("%err\n", db.Error)
 	}
@@ -73,15 +73,7 @@ func (ImageWorker) Callback(taskId string, params interface{}, result interface{
 	if taskResult["preview"] != nil {
 		fileModel.Preview = taskResult["preview"].(string)
 	}
-	if taskResult["carousel"] != nil {
-		carouselImages := taskResult["carousel"].(map[string]string)
-		carouselModel := &model.Carousel{
-			Url:   carouselImages["url"],
-			Thumb: carouselImages["thumb"],
-		}
-		carouselModel.DB().Where("id = ?", taskParams["id"]).Updates(fileModel)
-	}
-	db := fileModel.DB().Where("id = ?", taskParams["id"]).Updates(fileModel)
+	db := fileModel.DB().Where("uuid = ?", taskParams["uuid"]).Updates(fileModel)
 	if db.Error != nil {
 		log.Errorf("%err\n", db.Error)
 	}
@@ -104,7 +96,12 @@ func createImageResize(image *image.Image, params map[string]interface{}) (strin
 	if params["extension"] != nil {
 		extension = params["extension"].(string)
 	}
-	name := params["uuid"].(string) + "_" + strconv.Itoa(width) + "_" + strconv.Itoa(height)
+	name := ""
+	if params["name"] == nil {
+		name = params["uuid"].(string) + "_" + strconv.Itoa(width) + "_" + strconv.Itoa(height)
+	} else {
+		name = params["name"].(string)
+	}
 	thumb, err := image.CreateResize(name, width, height, extension)
 	if err != nil {
 		log.Errorf("%err\n", err)
@@ -118,7 +115,12 @@ func createImageCompress(image *image.Image, params map[string]interface{}) (str
 	if params["quality"] != nil {
 		quality = params["quality"].(int)
 	}
-	name := params["uuid"].(string) + "_" + strconv.Itoa(image.Width) + "_" + strconv.Itoa(image.Height) + "_" + strconv.Itoa(quality)
+	name := ""
+	if params["name"] == nil {
+		name = params["uuid"].(string) + "_" + strconv.Itoa(image.Width) + "_" + strconv.Itoa(image.Height) + "_" + strconv.Itoa(quality)
+	} else {
+		name = params["name"].(string)
+	}
 	thumb, err := image.CreateCompress(name, quality)
 	if err != nil {
 		log.Errorf("%err\n", err)

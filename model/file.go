@@ -3,6 +3,7 @@ package model
 import (
 	"gorm.io/gorm"
 	"os"
+	"path/filepath"
 	"pmsGo/lib/database"
 	fileLib "pmsGo/lib/file"
 )
@@ -33,6 +34,10 @@ const (
 
 func (model *File) DB() *gorm.DB {
 	return database.DB.Model(&model)
+}
+
+func (model File) RemoveAll() error {
+	return fileLib.RemoveAll(filepath.Dir(fileLib.FullPath(model.Path)))
 }
 
 func (model File) RemoveFile() error {

@@ -26,15 +26,10 @@ const (
 )
 
 func Open(file string) (*Video, error) {
-	ffmpegConf := &ffmpeg.Config{
-		FfmpegBinPath:   config.Config.Web.Upload.Video.Ffmpeg,
-		FfprobeBinPath:  config.Config.Web.Upload.Video.Ffprobe,
-		ProgressEnabled: true,
-	}
 	video := &Video{}
-	video.ffmpeg = ffmpeg.New(ffmpegConf).Input(file)
 	video.Name = filepath.Base(file)
 	video.Path = filepath.Dir(file)
+	video.Source = file
 	video.Extension = filepath.Ext(file)
 	video.MimeType = mime.TypeByExtension(filepath.Ext(file))
 	err := video.Metadata()
@@ -44,8 +39,17 @@ func Open(file string) (*Video, error) {
 	return video, nil
 }
 
+func (receiver *Video) Ffmpeg(progressEnabled bool) transcoder.Transcoder {
+	ffmpegConf := &ffmpeg.Config{
+		FfmpegBinPath:   config.Config.Web.Upload.Video.Ffmpeg,
+		FfprobeBinPath:  config.Config.Web.Upload.Video.Ffprobe,
+		ProgressEnabled: progressEnabled,
+	}
+	return ffmpeg.New(ffmpegConf).Input(receiver.Source)
+}
+
 func (receiver *Video) Metadata() error {
-	metadata, err := receiver.ffmpeg.GetMetadata()
+	metadata, err := receiver.Ffmpeg(false).GetMetadata()
 	if err == nil {
 		format := metadata.GetFormat()
 		receiver.BitRate = format.GetBitRate()
@@ -65,6 +69,7 @@ func (receiver *Video) Metadata() error {
 		return err
 	}
 }
+
 func (receiver *Video) FileName() string {
 	return strings.TrimSuffix(receiver.Name, receiver.Extension)
 }
@@ -90,7 +95,7 @@ func (receiver *Video) CreateThumb(width int, height int, ext string, time strin
 		Overwrite:    &overwrite,
 		VideoFilter:  &videoFilter,
 	}
-	progressChannel, err := receiver.ffmpeg.
+	progressChannel, err := receiver.Ffmpeg(true).
 		Output(path).
 		WithOptions(opts).
 		Start(opts)
@@ -129,7 +134,7 @@ func (receiver *Video) CreateM3u8(width int, height int) (string, <-chan transco
 			"-start_number": "0",
 		},
 	}
-	progressChannel, err := receiver.ffmpeg.
+	progressChannel, err := receiver.Ffmpeg(true).
 		Output(path).
 		WithOptions(opts).
 		Start(opts)
