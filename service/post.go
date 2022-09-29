@@ -117,8 +117,8 @@ func (service Post) Save(postData map[string]interface{}) (*model.Post, error) {
 	}
 	return data, nil
 }
-func (service Post) Delete(id int) error {
-	post, _ := service.FindOneById(id)
+func (service Post) Delete(uuid string) error {
+	post, _ := service.FindOneByUuid(uuid)
 	if post == nil {
 		return errors.New("post not exists")
 	}

@@ -76,16 +76,18 @@ func (ctl post) Save(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeOk(), save, "创建稿件列表成功"))
 }
+
 func (ctl post) Delete(ctx *gin.Context) {
-	requestData := make(map[string]int)
+	requestData := make(map[string]string)
 	ctx.ShouldBind(&requestData)
-	err := service.PostService.Delete(requestData["id"])
+	err := service.PostService.Delete(requestData["uuid"])
 	if err != nil {
 		ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeFail(), nil, err.Error()))
 		return
 	}
 	ctx.JSON(http.StatusOK, ctl.Response(ctl.CodeOk(), nil, "删除稿件列表成功"))
 }
+
 func (ctl post) ToggleStatus(ctx *gin.Context) {
 	requestData := make(map[string]interface{})
 	ctx.ShouldBind(&requestData)
