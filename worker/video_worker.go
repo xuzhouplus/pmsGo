@@ -134,7 +134,7 @@ func extractVideoFrame(video *video.Video, param map[string]interface{}) (string
 		if param["height"] != nil {
 			height = param["height"].(int)
 		}
-		path, progressChannel, err := video.CreateThumb(width, height, "jpg", helper.SecondToTime(seek))
+		path, progressChannel, err := video.CreateThumb(param["name"].(string), width, height, "jpg", helper.SecondToTime(seek))
 		if err != nil {
 			log.Errorf("%err\n", err)
 			return path, progressChannel, err
@@ -147,6 +147,7 @@ func extractVideoFrame(video *video.Video, param map[string]interface{}) (string
 func createVideoFrame(taskId string, video *video.Video, param map[string]interface{}) (string, error) {
 	log.Debugf("video frame sync task:%v\n", param)
 	path, progressChannel, err := extractVideoFrame(video, map[string]interface{}{
+		"name":   param["name"].(string),
 		"seek":   param["seek"].(int),
 		"height": param["height"].(int),
 		"width":  param["width"].(int),

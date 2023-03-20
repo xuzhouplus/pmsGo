@@ -19,21 +19,21 @@ func SetTaskProcessStatus(taskId string, stepName string, status map[string]inte
 	if taskId == "" {
 		return
 	}
-	cache.Redis.HSet(context.TODO(), TaskProcessCachePrefix+taskId, stepName, status)
+	cache.Redis.HSet(context.TODO(), cache.Key(TaskProcessCachePrefix+taskId), stepName, status)
 }
 
 func ClearTaskProcessStatus(taskId string) {
 	if taskId == "" {
 		return
 	}
-	cache.Redis.Del(context.TODO(), TaskProcessCachePrefix+taskId)
+	cache.Redis.Del(context.TODO(), cache.Key(TaskProcessCachePrefix+taskId))
 }
 
 func SetStatusExpire(taskId string) {
 	if taskId == "" {
 		return
 	}
-	cache.Redis.Expire(context.TODO(), TaskProcessCachePrefix+taskId, time.Hour)
+	cache.Redis.Expire(context.TODO(), cache.Key(TaskProcessCachePrefix+taskId), time.Hour)
 }
 
 func TaskSteps(steps interface{}) []string {

@@ -78,7 +78,7 @@ func (gateway Qq) AuthorizeUrl(scope string, redirect string, state string) (str
 	return QqAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway *Qq) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (gateway *Qq) AccessToken(callbackData map[string]string, redirect string) (map[string]string, error) {
 	client := goz.NewClient()
 	response, err := client.Get(QqAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
@@ -95,17 +95,19 @@ func (gateway *Qq) AccessToken(callbackData map[string]string, redirect string) 
 		},
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := response.GetParsedBody()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	gateway.QqOpenId, err = gateway.Me(body.Get("access_token").String())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return body.Get("access_token").String(), nil
+	return map[string]string{
+		"accessToken": body.Get("access_token").String(),
+	}, nil
 }
 
 func (gateway Qq) Me(accessToken string) (string, error) {

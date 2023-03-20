@@ -51,7 +51,8 @@ func Upload(accessToken string, path string, uploadId string, partSeq int, file 
 			"access_token": accessToken,
 			"type":         "tmpfile",
 			"path":         path,
-			"uploadid":     partSeq,
+			"uploadid":     uploadId,
+			"partseq":      partSeq,
 		},
 		FormParams: map[string]interface{}{
 			"file": file,

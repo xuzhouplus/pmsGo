@@ -74,13 +74,19 @@ func (receiver *Video) FileName() string {
 	return strings.TrimSuffix(receiver.Name, receiver.Extension)
 }
 
-func (receiver *Video) CreateThumb(width int, height int, ext string, time string) (string, <-chan transcoder.Progress, error) {
+func (receiver *Video) CreateThumb(name string, width int, height int, ext string, time string) (string, <-chan transcoder.Progress, error) {
 	if time == "" {
 		time = "00:00:00"
 	}
 	widthSpread := strconv.Itoa(width)
 	heightSpread := strconv.Itoa(height)
-	path := receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + widthSpread + "_" + heightSpread + "." + ext
+	var path string
+	if name == "" {
+		path = receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + widthSpread + "_" + heightSpread + "." + ext
+	} else {
+		path = receiver.Path + string(filepath.Separator) + receiver.FileName() + string(filepath.Separator) + name + "." + ext
+	}
+
 	dir := filepath.Dir(path)
 	err := file.Mkdir(dir)
 	if err != nil {

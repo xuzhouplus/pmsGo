@@ -191,3 +191,7 @@ func (img Image) CreateCompress(destName string, quality int) (*Image, error) {
 		return nil, fmt.Errorf("unsupported image format: %v", img.MimeType)
 	}
 }
+
+func (img Image) Md5() {
+	
+}

@@ -19,6 +19,7 @@ func (cto file) Verbs() map[string][]string {
 	verbs := make(map[string][]string)
 	verbs["index"] = []string{controller.Get}
 	verbs["upload"] = []string{controller.Post, controller.Get}
+	verbs["update"] = []string{controller.Post}
 	verbs["delete"] = []string{controller.Post}
 	verbs["detail"] = []string{controller.Get}
 	verbs["extract-frame"] = []string{controller.Post}
@@ -29,7 +30,7 @@ func (cto file) Verbs() map[string][]string {
 func (cto file) Authenticator() controller.Authenticator {
 	authenticator := controller.Authenticator{
 		Excepts:   []string{},
-		Optionals: []string{"index", "upload", "delete"},
+		Optionals: []string{"index", "detail"},
 	}
 	return authenticator
 }
@@ -89,6 +90,21 @@ func (cto file) Upload(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, cto.ResponseOk(fileModel, "success"))
 }
 
+func (cto file) Update(ctx *gin.Context) {
+	requestData := make(map[string]string)
+	err := ctx.ShouldBindJSON(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+		return
+	}
+	file, err := service.FileService.Update(requestData["uuid"], requestData["name"], requestData["description"])
+	if err != nil {
+		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+		return
+	}
+	ctx.JSON(http.StatusOK, cto.ResponseOk(file, "success"))
+}
+
 func (cto file) ExtractFrame(ctx *gin.Context) {
 	requestData := make(map[string]interface{})
 	err := ctx.ShouldBindJSON(&requestData)
@@ -111,8 +127,16 @@ func (cto file) CapturePoster(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
 		return
 	}
-	result := service.FileService.CapturePoster(requestData["file_id"], requestData["seek"], requestData["width"], requestData["height"])
-	ctx.JSON(http.StatusOK, cto.ResponseOk(result, "发起抽帧成功"))
+	result, err := service.FileService.CapturePoster(requestData["file_id"], requestData["seek"], requestData["width"], requestData["height"])
+	if err != nil {
+		ctx.JSON(http.StatusOK, cto.ResponseFail("", err.Error()))
+		return
+	}
+	result.Path = fileLib.FullUrl(result.Path)
+	result.Thumb = fileLib.FullUrl(result.Thumb)
+	result.Preview = fileLib.FullUrl(result.Preview)
+	result.Poster = fileLib.FullUrl(result.Poster)
+	ctx.JSON(http.StatusOK, cto.ResponseOk(result, "抽帧成功"))
 }
 
 func (cto file) Delete(ctx *gin.Context) {

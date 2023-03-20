@@ -123,7 +123,8 @@ func ChunkUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, er
 	}
 	lock := &sync.Mutex{}
 	lock.Lock()
-	cacheData, err := cache.Get(ChunkUploadFileCache + upload.Uuid)
+	cacheKey := ChunkUploadFileCache + upload.Uuid
+	cacheData, err := cache.Get(cacheKey)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +145,7 @@ func ChunkUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, er
 			return nil, err
 		}
 		defer saveFile.Close()
-		err = cache.Set(ChunkUploadFileCache+upload.Uuid, filePath, 1800)
+		err = cache.Set(cacheKey, filePath, 1800)
 		if err != nil {
 			return nil, err
 		}
@@ -192,10 +193,12 @@ func ChunkUpload(ctx *gin.Context, fieldName string, subDir string) (*Upload, er
 	lock.Lock()
 	defer lock.Unlock()
 	if strconv.Itoa(int(increase)) == ctx.PostForm("count") {
+		cache.Del(ChunkUploadCountCache + upload.Uuid)
 		upload.Status = UploadStatusComplete
 	} else {
 		upload.Status = UploadStatusProcess
 	}
+	//cache.SetExpire(cacheKey, 1800)
 	return upload, nil
 }
 
@@ -263,6 +266,31 @@ func GetFileType(mimeType string) string {
 		return TypeVideo
 	}
 	return TypeUnknown
+}
+
+func GetDir(path string) (string, error) {
+	path = filepath.FromSlash(path)
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	fileName := fileInfo.Name()
+	fileDir := strings.TrimSuffix(path, fileName)
+	return fileDir, nil
+}
+
+func GetName(path string) (string, error) {
+	path = filepath.FromSlash(path)
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	fileName := fileInfo.Name()
+	return fileName, nil
+}
+
+func Rename(srcPath string, descPath string) error {
+	return os.Rename(srcPath, descPath)
 }
 
 func Remove(fullPath string) error {
@@ -336,8 +364,6 @@ func RelativeUrl(url Url) string {
 }
 
 func RelativePath(path Path) string {
-	log.Debug(path)
-	log.Debug(GetPath())
 	return strings.TrimPrefix(string(path), GetPath())
 }
 

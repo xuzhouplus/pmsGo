@@ -85,7 +85,7 @@ func (gateway Baidu) AuthorizeUrl(scope string, redirect string, state string) (
 	return BaiduAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway Baidu) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (gateway Baidu) AccessToken(callbackData map[string]string, redirect string) (map[string]string, error) {
 	client := goz.NewClient()
 	response, err := client.Get(BaiduAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
@@ -101,13 +101,17 @@ func (gateway Baidu) AccessToken(callbackData map[string]string, redirect string
 		},
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := response.GetParsedBody()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return body.Get("access_token").String(), nil
+
+	return map[string]string{
+		"accessToken":  body.Get("access_token").String(),
+		"refreshToken": body.Get("refresh_token").String(),
+	}, nil
 }
 
 func (gateway Baidu) User(accessToken string) (map[string]string, error) {

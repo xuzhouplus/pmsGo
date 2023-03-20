@@ -8,7 +8,7 @@ import (
 )
 
 type Oauth struct {
-	Type     string
+	Type    string
 	Gateway gateway.Gateway
 }
 
@@ -52,12 +52,12 @@ func (oauth Oauth) AuthorizeUrl(scope string, redirect string) (string, string, 
 	}
 	return oauth.Gateway.AuthorizeUrl(scope, redirect, state)
 }
-func (oauth Oauth) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (oauth Oauth) AccessToken(callbackData map[string]string, redirect string) (*user.Token, error) {
 	token, err := oauth.Gateway.AccessToken(callbackData, redirect)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return token, nil
+	return &user.Token{AccessToken: token["accessToken"], RefreshToken: token["refreshToken"]}, nil
 }
 func (oauth Oauth) User(accessToken string) (*user.User, error) {
 	auth, err := oauth.Gateway.User(accessToken)

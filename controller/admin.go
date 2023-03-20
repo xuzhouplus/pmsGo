@@ -295,7 +295,7 @@ func (ctl admin) Callback(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return
 	}
-	user, err := oauthGateway.User(token)
+	user, err := oauthGateway.User(token.AccessToken)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ctl.Response(controller.CodeOk, nil, err.Error()))
 		return

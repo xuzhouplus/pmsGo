@@ -12,6 +12,7 @@ import (
 	"pmsGo/lib/sync"
 	"pmsGo/model"
 	"pmsGo/worker"
+	"strconv"
 	"time"
 )
 
@@ -133,6 +134,27 @@ func (service File) FindByUuid(uuid string) (*model.File, error) {
 	return one, nil
 }
 
+func (service File) Update(uuid string, name string, description string) (*model.File, error) {
+	if uuid == "" {
+		return nil, errors.New("文件id不能为空")
+	}
+	if name == "" {
+		return nil, errors.New("文件名称不能为空")
+	}
+	file, err := service.FindByUuid(uuid)
+	if err != nil {
+		return nil, err
+	}
+	file.Name = name
+	file.Description = description
+	db := file.DB().Where("id = ?", file.ID).Updates(file)
+	if db.Error != nil {
+		log.Errorf("%err\n", db.Error)
+		return nil, db.Error
+	}
+	return file, nil
+}
+
 func (service File) Delete(uuid string) error {
 	var one model.File
 	connect := one.DB()
@@ -162,7 +184,7 @@ func (service File) ProcessImage(image *model.File) error {
 	if err != nil {
 		return err
 	}
-	cache.Redis.SAdd(context.TODO(), FileTaskCachePrefix+image.Uuid, task.UUID)
+	cache.Redis.SAdd(context.TODO(), cache.Key(FileTaskCachePrefix+image.Uuid), task.UUID)
 	return nil
 }
 
@@ -175,8 +197,8 @@ func (service File) ProcessVideo(fileModel *model.File) error {
 	if err != nil {
 		return err
 	}
-	cache.Redis.SAdd(context.TODO(), "file_task:"+fileModel.Uuid, task.UUID)
-	cache.Redis.Expire(context.TODO(), "file_task:"+fileModel.Uuid, time.Hour*24)
+	cache.Redis.SAdd(context.TODO(), cache.Key("file_task:"+fileModel.Uuid), task.UUID)
+	cache.Redis.Expire(context.TODO(), cache.Key("file_task:"+fileModel.Uuid), time.Hour*24)
 	return nil
 }
 
@@ -234,11 +256,12 @@ func (service File) SetPoster(fileId string, posterPath string) error {
 	return nil
 }
 
-func (service File) CapturePoster(fileId interface{}, point interface{}, width interface{}, height interface{}) error {
+func (service File) CapturePoster(fileId interface{}, point interface{}, width interface{}, height interface{}) (*model.File, error) {
 	fileModel, err := service.FindByUuid(fileId.(string))
 	if err != nil {
-		return err
+		return nil, err
 	}
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
 	taskJob := &worker.FrameJob{
 		Path: fileLib.FullPath(fileModel.Path),
 	}
@@ -251,29 +274,35 @@ func (service File) CapturePoster(fileId interface{}, point interface{}, width i
 	if height != nil {
 		taskJob.Height = int(height.(float64))
 	}
-	log.Errorf("%V", taskJob)
+	taskJob.FileName = "poster_" + timestamp
+	log.Debugf("%V", taskJob)
 	frameWorker := worker.FrameWorker{}
 	posterResult, err := frameWorker.Process(fileModel.Uuid, taskJob)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	fileModel.Poster = string(fileLib.PathToUrl(fileLib.Path(posterResult.(string))))
+	oldPoster := fileModel.Poster
+	posterPath := posterResult.(string)
+	fileModel.Poster = string(fileLib.PathToUrl(fileLib.Path(posterPath)))
 	imageWorker := worker.ImageWorker{}
 	thumbResult, err := imageWorker.Process(fileModel.Uuid, map[string]interface{}{
-		"path":  fileLib.FullPath(posterResult.(string)),
+		"path":  fileLib.FullPath(posterPath),
 		"steps": []string{worker.ImageWorkerCreateThumbStepName},
 		"uuid":  fileModel.Uuid,
-		"name":  "320_180",
+		"name":  "thumb_" + timestamp,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
+	oldThumb := fileModel.Thumb
 	thumbMap := thumbResult.(map[string]interface{})
 	fileModel.Thumb = string(fileLib.PathToUrl(fileLib.Path(thumbMap["thumb"].(string))))
 	db := fileModel.DB().Where("id = ?", fileModel.ID).Updates(fileModel)
 	if db.Error != nil {
 		log.Errorf("%err\n", db.Error)
-		return db.Error
+		return nil, db.Error
 	}
-	return nil
+	fileLib.Remove(oldPoster)
+	fileLib.Remove(oldThumb)
+	return fileModel, nil
 }

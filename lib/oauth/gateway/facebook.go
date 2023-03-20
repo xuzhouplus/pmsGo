@@ -76,7 +76,7 @@ func (gateway Facebook) AuthorizeUrl(scope string, redirect string, state string
 	return FacebookAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway Facebook) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (gateway Facebook) AccessToken(callbackData map[string]string, redirect string) (map[string]string, error) {
 	client := goz.NewClient()
 	response, err := client.Get(FacebookAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
@@ -91,13 +91,16 @@ func (gateway Facebook) AccessToken(callbackData map[string]string, redirect str
 		},
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := response.GetParsedBody()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return body.Get("access_token").String(), nil
+	return map[string]string{
+		"accessToken":  body.Get("access_token").String(),
+		"refreshToken": "",
+	}, nil
 }
 
 func (gateway Facebook) User(accessToken string) (map[string]string, error) {

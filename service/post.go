@@ -26,7 +26,7 @@ func (service Post) List(page int, size int, fields []string, like string, enabl
 	if size == 0 {
 		size = 10
 	}
-	connect.Offset((page - 1) * size)
+	connect.Offset(page * size)
 	connect.Limit(size)
 	if like != "" {
 		connect.Where("title = ?", like)
@@ -86,7 +86,7 @@ func (service Post) Save(postData map[string]interface{}) (*model.Post, error) {
 	var err error
 	data := &model.Post{}
 	if postData["id"] != nil {
-		data, err = service.FindOneById(int(postData["id"].(float64)))
+		data, err = service.FindOneByUuid(postData["id"].(string))
 		if err != nil {
 			return nil, err
 		}

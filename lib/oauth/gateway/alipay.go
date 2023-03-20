@@ -119,7 +119,7 @@ func (gateway Alipay) AuthorizeUrl(scope string, redirect string, state string) 
 	return AlipayAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway Alipay) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (gateway Alipay) AccessToken(callbackData map[string]string, redirect string) (map[string]string, error) {
 	queryData := map[string]interface{}{
 		"app_id":     gateway.AlipayAppId,
 		"method":     "alipay.system.oauth.token",
@@ -141,17 +141,22 @@ func (gateway Alipay) AccessToken(callbackData map[string]string, redirect strin
 		FormParams: queryData,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := response.GetParsedBody()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	responseData := body.Get("alipay_system_oauth_token_response")
 	if responseData.Exists() {
-		return responseData.Get("access_token").String(), nil
+		accessToken := responseData.Get("access_token").String()
+		refreshToken := responseData.Get("refresh_token").String()
+		return map[string]string{
+			"accessToken":  accessToken,
+			"refreshToken": refreshToken,
+		}, nil
 	}
-	return "", fmt.Errorf("获取支付宝 ACCESS_TOKEN 出错：%v", body.String())
+	return nil, fmt.Errorf("获取支付宝 ACCESS_TOKEN 出错：%v", body.String())
 }
 
 func (gateway Alipay) User(accessToken string) (map[string]string, error) {

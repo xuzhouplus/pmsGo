@@ -88,7 +88,7 @@ func (gateway Weibo) AuthorizeUrl(scope string, redirect string, state string) (
 	return WeiboAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway *Weibo) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (gateway *Weibo) AccessToken(callbackData map[string]string, redirect string) (map[string]string, error) {
 	requestData := &WeiboAccessTokenRequest{
 		ClientId:     gateway.WeiboAppKey,
 		ClientSecret: gateway.WeiboAppSecret,
@@ -105,14 +105,16 @@ func (gateway *Weibo) AccessToken(callbackData map[string]string, redirect strin
 		JSON: requestData,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := response.GetParsedBody()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	gateway.WeiboUuid = body.Get("uuid").String()
-	return body.Get("access_token").String(), nil
+	return map[string]string{
+		"accessToken": body.Get("access_token").String(),
+	}, nil
 }
 
 func (gateway Weibo) User(accessToken string) (map[string]string, error) {

@@ -88,7 +88,7 @@ func (gateway GitHub) AuthorizeUrl(scope string, redirect string, state string) 
 	return GitHubAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway GitHub) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (gateway GitHub) AccessToken(callbackData map[string]string, redirect string) (map[string]string, error) {
 	requestData := &GitHubAccessTokenRequest{
 		ClientId:     gateway.GithubAppId,
 		ClientSecret: gateway.GithubAppSecret,
@@ -105,13 +105,16 @@ func (gateway GitHub) AccessToken(callbackData map[string]string, redirect strin
 		JSON: requestData,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := response.GetParsedBody()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return body.Get("access_token").String(), nil
+	return map[string]string{
+		"accessToken":  body.Get("access_token").String(),
+		"refreshToken": "",
+	}, nil
 }
 
 func (gateway GitHub) User(accessToken string) (map[string]string, error) {

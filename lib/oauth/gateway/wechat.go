@@ -75,7 +75,7 @@ func (gateway Wechat) AuthorizeUrl(scope string, redirect string, state string) 
 	return WechatAuthorizeUrl + "?" + queryString + "#wechat_redirect", state, nil
 }
 
-func (gateway *Wechat) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (gateway *Wechat) AccessToken(callbackData map[string]string, redirect string) (map[string]string, error) {
 	requestData := &WechatAccessTokenRequest{
 		Appid:     gateway.WechatAppId,
 		Secret:    gateway.WechatAppSecret,
@@ -91,14 +91,16 @@ func (gateway *Wechat) AccessToken(callbackData map[string]string, redirect stri
 		JSON: requestData,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := response.GetParsedBody()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	gateway.WechatOpenId = body.Get("openid").String()
-	return body.Get("access_token").String(), nil
+	return map[string]string{
+		"accessToken": body.Get("access_token").String(),
+	}, nil
 }
 
 func (gateway Wechat) User(accessToken string) (map[string]string, error) {

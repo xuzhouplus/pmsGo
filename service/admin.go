@@ -87,13 +87,13 @@ func (service Admin) Update(postData map[string]interface{}) (*model.Admin, erro
 	if admin == nil {
 		return nil, errors.New("账号不存在")
 	}
-	avatar := postData["avatar"].(string)
-	if avatar != "" {
-		admin.Avatar = avatar
+	avatar := postData["avatar"]
+	if avatar != nil {
+		admin.Avatar = avatar.(string)
 	}
-	password := postData["password"].(string)
-	if password != "" {
-		password, err := rsa.DecryptByPrivateKey(password)
+	password := postData["password"]
+	if password != nil {
+		password, err := rsa.DecryptByPrivateKey(password.(string))
 		if err != nil {
 			log.Printf("password:%e \n", err)
 			return nil, err

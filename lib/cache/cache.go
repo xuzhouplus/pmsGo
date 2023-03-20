@@ -40,7 +40,7 @@ func Key(key string) string {
 }
 
 func Ttl(seconds int) time.Duration {
-	return time.Duration(seconds) * time.Second
+	return time.Second * time.Duration(seconds)
 }
 
 func Marshal(value interface{}) ([]byte, error) {
@@ -164,4 +164,20 @@ func Decrease(key string, decrement int64) (int64, error) {
 		return 0, result.Err()
 	}
 	return result.Result()
+}
+
+func SetExpire(key string, ttl int) (bool, error) {
+	result := Redis.Expire(context.Background(), Key(key), Ttl(ttl))
+	if result.Err() != nil {
+		return false, result.Err()
+	}
+	return result.Result()
+}
+
+func Del(key string) error {
+	result := Redis.Del(context.Background(), Key(key))
+	if result.Err() != nil {
+		return result.Err()
+	}
+	return nil
 }

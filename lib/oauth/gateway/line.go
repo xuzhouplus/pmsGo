@@ -77,7 +77,7 @@ func (gateway Line) AuthorizeUrl(scope string, redirect string, state string) (s
 	return LineAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway Line) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (gateway Line) AccessToken(callbackData map[string]string, redirect string) (map[string]string, error) {
 	client := goz.NewClient()
 	response, err := client.Post(LineAccessTokenUrl, goz.Options{
 		Headers: map[string]interface{}{
@@ -93,13 +93,15 @@ func (gateway Line) AccessToken(callbackData map[string]string, redirect string)
 		},
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := response.GetParsedBody()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return body.Get("access_token").String(), nil
+	return map[string]string{
+		"accessToken": body.Get("access_token").String(),
+	}, nil
 }
 
 func (gateway Line) User(accessToken string) (map[string]string, error) {

@@ -75,7 +75,7 @@ func (gateway Google) AuthorizeUrl(scope string, redirect string, state string) 
 	return GoogleAuthorizeUrl + "?" + queryString, state, nil
 }
 
-func (gateway Google) AccessToken(callbackData map[string]string, redirect string) (string, error) {
+func (gateway Google) AccessToken(callbackData map[string]string, redirect string) (map[string]string, error) {
 	requestData := &GoogleAccessTokenRequest{
 		ClientId:     gateway.GoogleAppId,
 		ClientSecret: gateway.GoogleAppSecret,
@@ -92,13 +92,16 @@ func (gateway Google) AccessToken(callbackData map[string]string, redirect strin
 		JSON: requestData,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	body, err := response.GetParsedBody()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return body.Get("access_token").String(), nil
+	return map[string]string{
+		"accessToken":  body.Get("access_token").String(),
+		"refreshToken": body.Get("access_token").String(),
+	}, nil
 }
 
 func (gateway Google) User(accessToken string) (map[string]string, error) {

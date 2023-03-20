@@ -7,6 +7,7 @@ const ExtractFrameCachePrefix = "extract_frame:"
 type FrameWorker struct{}
 
 type FrameJob struct {
+	FileName string
 	Path     string
 	Seek     int
 	Width    int
@@ -29,6 +30,9 @@ func (FrameWorker) Process(taskId string, params interface{}) (result interface{
 	}
 	if taskParams.Height == 0 {
 		frameParams["height"] = video.Height
+	}
+	if taskParams.FileName != "" {
+		frameParams["name"] = taskParams.FileName
 	}
 	frame, err := createVideoFrame(taskId, video, frameParams)
 	if err != nil {
