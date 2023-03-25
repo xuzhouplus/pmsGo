@@ -96,7 +96,9 @@ func (service Post) Save(postData map[string]interface{}) (*model.Post, error) {
 	}
 	data.Type = postData["type"].(string)
 	data.Title = postData["title"].(string)
-	data.SubTitle = postData["sub_title"].(string)
+	if postData["sub_title"] != nil {
+		data.SubTitle = postData["sub_title"].(string)
+	}
 	data.Content = postData["content"].(string)
 	data.Cover = postData["cover"].(string)
 	data.Status = int(postData["status"].(float64))

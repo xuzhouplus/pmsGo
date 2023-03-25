@@ -134,7 +134,11 @@ func extractVideoFrame(video *video.Video, param map[string]interface{}) (string
 		if param["height"] != nil {
 			height = param["height"].(int)
 		}
-		path, progressChannel, err := video.CreateThumb(param["name"].(string), width, height, "jpg", helper.SecondToTime(seek))
+		name := ""
+		if param["name"] != nil {
+			name = param["name"].(string)
+		}
+		path, progressChannel, err := video.CreateThumb(name, width, height, "jpg", helper.SecondToTime(seek))
 		if err != nil {
 			log.Errorf("%err\n", err)
 			return path, progressChannel, err
